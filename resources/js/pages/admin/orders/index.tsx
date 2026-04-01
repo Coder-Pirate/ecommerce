@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Eye, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     AlertDialog,
@@ -217,6 +217,12 @@ export default function OrdersIndex() {
                                                 className="inline-flex items-center rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                                             >
                                                 <Eye className="h-4 w-4" />
+                                            </Link>
+                                            <Link
+                                                href={`/admin/orders/${order.id}/edit`}
+                                                className="inline-flex items-center rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                            >
+                                                <Pencil className="h-4 w-4" />
                                             </Link>
                                             <button
                                                 onClick={() => setDeleteOrderId(order.id)}

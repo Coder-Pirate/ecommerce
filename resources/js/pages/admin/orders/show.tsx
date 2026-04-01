@@ -1,5 +1,5 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, FileText, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useFlashToast } from '@/hooks/use-flash-toast';
 
@@ -63,7 +63,7 @@ export default function OrderShow() {
     function handleStatusChange(newStatus: string) {
         setStatus(newStatus);
         setSaving(true);
-        router.put(`/admin/orders/${order.id}`, { status: newStatus }, {
+        router.patch(`/admin/orders/${order.id}/status`, { status: newStatus }, {
             preserveScroll: true,
             onFinish: () => setSaving(false),
         });
@@ -89,6 +89,24 @@ export default function OrderShow() {
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium capitalize ${statusColors[order.status] || ''}`}>
                         {order.status}
                     </span>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href={`/admin/orders/${order.id}/edit`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent"
+                        >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                        </Link>
+                        <a
+                            href={`/admin/orders/${order.id}/invoice`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                        >
+                            <FileText className="h-4 w-4" />
+                            Invoice
+                        </a>
+                    </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
