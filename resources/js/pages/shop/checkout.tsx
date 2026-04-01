@@ -1,45 +1,57 @@
-import { Head, Link } from '@inertiajs/react';
-import { Lock, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Lock, ShoppingBag } from 'lucide-react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
-import { products, formatPrice } from '@/components/ecommerce/product-data';
+import { useCart, clearCart } from '@/stores/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
-// Demo order items
-const orderItems = [
-    { product: products[0], quantity: 1 },
-    { product: products[1], quantity: 2 },
-    { product: products[5], quantity: 1 },
-];
+function formatPrice(amount: number): string {
+    return `$${amount.toFixed(2)}`;
+}
 
 export default function CheckoutPage() {
-    const [step, setStep] = useState<'form' | 'success'>('form');
-
-    const subtotal = orderItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const { items, totalItems, subtotal } = useCart();
     const shipping = subtotal > 50 ? 0 : 5.99;
     const total = subtotal + shipping;
 
-    if (step === 'success') {
+    const { data, setData, post, processing, errors } = useForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        zip: '',
+        items: [] as { product_id: number; variant_id: number | null; quantity: number }[],
+    });
+
+    function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        data.items = items.map((i) => ({
+            product_id: i.productId,
+            variant_id: i.variantId,
+            quantity: i.quantity,
+        }));
+        post('/checkout', {
+            onSuccess: () => clearCart(),
+        });
+    }
+
+    if (items.length === 0) {
         return (
             <>
-                <Head title="Order Confirmed" />
+                <Head title="Checkout" />
                 <ShopLayout>
-                    <div className="mx-auto max-w-md py-16 text-center">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
-                            <ShieldCheck className="h-8 w-8" />
-                        </div>
-                        <h1 className="mb-2 text-2xl font-bold">Order Confirmed!</h1>
-                        <p className="mb-1 text-muted-foreground">Thank you for your purchase.</p>
-                        <p className="mb-6 text-sm text-muted-foreground">Order #ORD-{Math.floor(Math.random() * 90000) + 10000}</p>
-                        <div className="flex justify-center gap-3">
-                            <Button asChild>
-                                <Link href="/">Continue Shopping</Link>
-                            </Button>
-                        </div>
+                    <div className="py-16 text-center">
+                        <ShoppingBag className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+                        <p className="mb-1 text-lg font-medium">Your cart is empty</p>
+                        <p className="mb-4 text-sm text-muted-foreground">Add some products before checking out</p>
+                        <Button asChild>
+                            <Link href="/products">Continue Shopping</Link>
+                        </Button>
                     </div>
                 </ShopLayout>
             </>
@@ -61,116 +73,147 @@ export default function CheckoutPage() {
 
                 <h1 className="mb-6 text-xl font-bold md:text-2xl">Checkout</h1>
 
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Form */}
-                    <div className="space-y-6 lg:col-span-2">
-                        {/* Shipping info */}
-                        <Card className="p-4">
-                            <h2 className="mb-4 text-base font-semibold">Shipping Information</h2>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <Label htmlFor="firstName">First Name</Label>
-                                    <Input id="firstName" placeholder="John" className="mt-1" />
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        {/* Form */}
+                        <div className="space-y-6 lg:col-span-2">
+                            {/* Shipping info */}
+                            <Card className="p-4">
+                                <h2 className="mb-4 text-base font-semibold">Shipping Information</h2>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <Label htmlFor="firstName">First Name</Label>
+                                        <Input
+                                            id="firstName"
+                                            value={data.first_name}
+                                            onChange={(e) => setData('first_name', e.target.value)}
+                                            placeholder="John"
+                                            className="mt-1"
+                                        />
+                                        {errors.first_name && <p className="mt-1 text-xs text-destructive">{errors.first_name}</p>}
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="lastName">Last Name</Label>
+                                        <Input
+                                            id="lastName"
+                                            value={data.last_name}
+                                            onChange={(e) => setData('last_name', e.target.value)}
+                                            placeholder="Doe"
+                                            className="mt-1"
+                                        />
+                                        {errors.last_name && <p className="mt-1 text-xs text-destructive">{errors.last_name}</p>}
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value)}
+                                            placeholder="john@example.com"
+                                            className="mt-1"
+                                        />
+                                        {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <Label htmlFor="address">Address</Label>
+                                        <Input
+                                            id="address"
+                                            value={data.address}
+                                            onChange={(e) => setData('address', e.target.value)}
+                                            placeholder="123 Main Street"
+                                            className="mt-1"
+                                        />
+                                        {errors.address && <p className="mt-1 text-xs text-destructive">{errors.address}</p>}
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="city">City</Label>
+                                        <Input
+                                            id="city"
+                                            value={data.city}
+                                            onChange={(e) => setData('city', e.target.value)}
+                                            placeholder="New York"
+                                            className="mt-1"
+                                        />
+                                        {errors.city && <p className="mt-1 text-xs text-destructive">{errors.city}</p>}
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="zip">ZIP Code</Label>
+                                        <Input
+                                            id="zip"
+                                            value={data.zip}
+                                            onChange={(e) => setData('zip', e.target.value)}
+                                            placeholder="10001"
+                                            className="mt-1"
+                                        />
+                                        {errors.zip && <p className="mt-1 text-xs text-destructive">{errors.zip}</p>}
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <Label htmlFor="phone">Phone (optional)</Label>
+                                        <Input
+                                            id="phone"
+                                            type="tel"
+                                            value={data.phone}
+                                            onChange={(e) => setData('phone', e.target.value)}
+                                            placeholder="+1 (555) 000-0000"
+                                            className="mt-1"
+                                        />
+                                        {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label htmlFor="lastName">Last Name</Label>
-                                    <Input id="lastName" placeholder="Doe" className="mt-1" />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input id="email" type="email" placeholder="john@example.com" className="mt-1" />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <Label htmlFor="address">Address</Label>
-                                    <Input id="address" placeholder="123 Main Street" className="mt-1" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="city">City</Label>
-                                    <Input id="city" placeholder="New York" className="mt-1" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="zip">ZIP Code</Label>
-                                    <Input id="zip" placeholder="10001" className="mt-1" />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <Label htmlFor="phone">Phone</Label>
-                                    <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" className="mt-1" />
-                                </div>
-                            </div>
-                        </Card>
+                            </Card>
+                        </div>
 
-                        {/* Payment */}
-                        <Card className="p-4">
-                            <h2 className="mb-4 text-base font-semibold">Payment Details</h2>
-                            <div className="grid gap-4">
-                                <div>
-                                    <Label htmlFor="cardName">Name on Card</Label>
-                                    <Input id="cardName" placeholder="John Doe" className="mt-1" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="cardNumber">Card Number</Label>
-                                    <Input id="cardNumber" placeholder="4242 4242 4242 4242" className="mt-1" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="expiry">Expiry Date</Label>
-                                        <Input id="expiry" placeholder="MM/YY" className="mt-1" />
+                        {/* Order summary */}
+                        <Card className="h-fit p-4">
+                            <h2 className="mb-4 text-base font-semibold">Order Summary</h2>
+                            <div className="space-y-3">
+                                {items.map((item) => (
+                                    <div key={`${item.productId}-${item.variantId}`} className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/30">
+                                            {item.image ? (
+                                                <img src={`/${item.image}`} alt={item.name} className="h-full w-full object-cover" />
+                                            ) : (
+                                                <span className="text-lg">📦</span>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs font-medium">{item.name}</p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                Qty: {item.quantity}
+                                                {item.variantLabel && ` · ${item.variantLabel}`}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs font-medium">{formatPrice(item.price * item.quantity)}</span>
                                     </div>
-                                    <div>
-                                        <Label htmlFor="cvv">CVV</Label>
-                                        <Input id="cvv" placeholder="123" className="mt-1" />
-                                    </div>
+                                ))}
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Subtotal</span>
+                                    <span>{formatPrice(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Shipping</span>
+                                    <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+                                </div>
+                                <Separator />
+                                <div className="flex justify-between text-base font-bold">
+                                    <span>Total</span>
+                                    <span className="text-primary">{formatPrice(total)}</span>
                                 </div>
                             </div>
-                            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                                <Lock className="h-3 w-3" />
-                                <span>Your payment info is encrypted and secure</span>
-                            </div>
+
+                            <Button type="submit" className="mt-4 w-full" size="lg" disabled={processing}>
+                                <Lock className="mr-2 h-4 w-4" />
+                                {processing ? 'Placing Order...' : `Place Order — ${formatPrice(total)}`}
+                            </Button>
                         </Card>
                     </div>
-
-                    {/* Order summary */}
-                    <Card className="h-fit p-4">
-                        <h2 className="mb-4 text-base font-semibold">Order Summary</h2>
-                        <div className="space-y-3">
-                            {orderItems.map((item) => (
-                                <div key={item.product.id} className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted/30 text-lg">
-                                        {item.product.image}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-xs font-medium">{item.product.name}</p>
-                                        <p className="text-[10px] text-muted-foreground">Qty: {item.quantity}</p>
-                                    </div>
-                                    <span className="text-xs font-medium">{formatPrice(item.product.price * item.quantity)}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <Separator className="my-4" />
-
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Subtotal</span>
-                                <span>{formatPrice(subtotal)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Shipping</span>
-                                <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between text-base font-bold">
-                                <span>Total</span>
-                                <span className="text-primary">{formatPrice(total)}</span>
-                            </div>
-                        </div>
-
-                        <Button className="mt-4 w-full" size="lg" onClick={() => setStep('success')}>
-                            <Lock className="mr-2 h-4 w-4" />
-                            Place Order — {formatPrice(total)}
-                        </Button>
-                    </Card>
-                </div>
+                </form>
             </ShopLayout>
         </>
     );

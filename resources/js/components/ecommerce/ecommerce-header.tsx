@@ -2,12 +2,14 @@ import { Link, usePage } from '@inertiajs/react';
 import { Home, Info, Mail, Menu, Search, ShoppingBag, ShoppingCart, User, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
+import { useCart } from '@/stores/use-cart';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export function EcommerceHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) {
     const { auth } = usePage().props;
     const [searchOpen, setSearchOpen] = useState(false);
+    const { totalItems } = useCart();
 
     return (
         <header className="sticky top-0 z-40 border-b border-border bg-background">
@@ -64,9 +66,11 @@ export function EcommerceHeader({ onToggleSidebar }: { onToggleSidebar: () => vo
                     <Button variant="ghost" size="icon" className="relative" asChild>
                         <Link href="/cart">
                             <ShoppingCart className="h-5 w-5" />
-                            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                                0
-                            </span>
+                            {totalItems > 0 && (
+                                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                                    {totalItems > 99 ? '99+' : totalItems}
+                                </span>
+                            )}
                         </Link>
                     </Button>
                     {auth.user ? (

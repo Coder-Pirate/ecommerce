@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
+use App\Http\Controllers\Shop\OrderController;
 use App\Http\Controllers\Shop\ShopController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,8 @@ Route::get('/products', [ShopController::class, 'products'])->name('shop.product
 Route::get('/product/{id}', [ShopController::class, 'productDetail'])->name('shop.product');
 Route::get('/cart', [ShopController::class, 'cart'])->name('shop.cart');
 Route::get('/checkout', [ShopController::class, 'checkout'])->name('shop.checkout');
+Route::post('/checkout', [OrderController::class, 'store'])->name('shop.order.store');
+Route::get('/order/success/{orderNumber}', [OrderController::class, 'success'])->name('shop.order.success');
 Route::get('/about', [ShopController::class, 'about'])->name('about');
 Route::get('/contact', [ShopController::class, 'contact'])->name('contact');
 

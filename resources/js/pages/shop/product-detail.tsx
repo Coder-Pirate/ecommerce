@@ -1,7 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Heart, Minus, Plus, ShoppingCart, Truck } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
+import { addToCart } from '@/stores/use-cart';
 import type { Product } from '@/types/global';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -198,11 +200,30 @@ export default function ProductDetail() {
 
                         {/* Actions */}
                         <div className="mb-6 flex gap-3">
-                            <Button size="lg" className="flex-1" disabled={!activeInStock} asChild>
-                                <Link href="/cart">
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
-                                    {activeInStock ? 'Add to Cart' : 'Out of Stock'}
-                                </Link>
+                            <Button
+                                size="lg"
+                                className="flex-1"
+                                disabled={!activeInStock}
+                                onClick={() => {
+                                    const variantLabel = selectedVariant
+                                        ? [selectedVariant.size, selectedVariant.color].filter(Boolean).join(' / ')
+                                        : null;
+                                    addToCart(
+                                        {
+                                            productId: product.id,
+                                            variantId: selectedVariant?.id ?? null,
+                                            name: product.name,
+                                            price: parseFloat(activePrice),
+                                            image: product.images?.[0]?.image_path ?? null,
+                                            variantLabel,
+                                        },
+                                        quantity,
+                                    );
+                                    toast.success(`${product.name} added to cart`);
+                                }}
+                            >
+                                <ShoppingCart className="mr-2 h-4 w-4" />
+                                {activeInStock ? 'Add to Cart' : 'Out of Stock'}
                             </Button>
                             <Button variant="outline" size="lg">
                                 <Heart className="h-4 w-4" />

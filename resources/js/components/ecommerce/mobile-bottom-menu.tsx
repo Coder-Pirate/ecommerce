@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Grid3x3, Home, ShoppingBag, ShoppingCart, Ta
 import * as LucideIcons from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/stores/use-cart';
 
 type SubCategory = {
     id: number;
@@ -108,12 +109,13 @@ function MobileCategorySheet({
 export function MobileBottomMenu() {
     const { auth } = usePage().props;
     const [categoriesOpen, setCategoriesOpen] = useState(false);
+    const { totalItems } = useCart();
 
     const menuItems = [
         { name: 'Home', icon: Home, href: '/' },
         { name: 'Category', icon: Grid3x3, href: '#', onClick: () => setCategoriesOpen(true) },
         { name: 'Shop', icon: ShoppingBag, href: '/products' },
-        { name: 'Cart', icon: ShoppingCart, href: '/cart', badge: 0 },
+        { name: 'Cart', icon: ShoppingCart, href: '/cart', badge: totalItems },
         { name: 'Account', icon: User, href: auth.user ? '/dashboard' : '/login' },
     ];
 
