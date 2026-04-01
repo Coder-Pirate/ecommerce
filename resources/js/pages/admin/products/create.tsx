@@ -1,9 +1,10 @@
 import { Head, useForm, Link } from '@inertiajs/react';
-import { ArrowLeft, Upload, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 type Category = { id: number; name: string };
 type SubCategory = { id: number; category_id: number; name: string };
+type VariantRow = { size: string; color: string; price: string; original_price: string; in_stock: boolean };
 
 type Props = {
     categories: Category[];
@@ -20,6 +21,7 @@ export default function CreateProduct({ categories, subCategories }: Props) {
         original_price: '',
         images: [] as File[],
         in_stock: true,
+        variants: [] as VariantRow[],
     });
 
     const [previews, setPreviews] = useState<string[]>([]);
@@ -28,6 +30,20 @@ export default function CreateProduct({ categories, subCategories }: Props) {
         () => (data.category_id ? subCategories.filter((sc) => sc.category_id === Number(data.category_id)) : []),
         [data.category_id, subCategories],
     );
+
+    function addVariant() {
+        setData('variants', [...data.variants, { size: '', color: '', price: '', original_price: '', in_stock: true }]);
+    }
+
+    function updateVariant(index: number, field: keyof VariantRow, value: string | boolean) {
+        const updated = [...data.variants];
+        updated[index] = { ...updated[index], [field]: value };
+        setData('variants', updated);
+    }
+
+    function removeVariant(index: number) {
+        setData('variants', data.variants.filter((_, i) => i !== index));
+    }
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -225,6 +241,89 @@ export default function CreateProduct({ categories, subCategories }: Props) {
                                 In Stock
                             </label>
                         </div>
+                    </div>
+
+                    {/* Variants */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">Product Variants</label>
+                            <button
+                                type="button"
+                                onClick={addVariant}
+                                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+                            >
+                                <Plus className="h-3 w-3" /> Add Variant
+                            </button>
+                        </div>
+                        {data.variants.length === 0 && (
+                            <p className="text-xs text-muted-foreground">No variants added. Product will use the base price above.</p>
+                        )}
+                        {data.variants.map((variant, i) => (
+                            <div key={i} className="flex flex-wrap items-end gap-2 rounded-lg border border-input p-3">
+                                <div className="w-24 space-y-1">
+                                    <label className="text-[11px] text-muted-foreground">Size</label>
+                                    <input
+                                        type="text"
+                                        value={variant.size}
+                                        onChange={(e) => updateVariant(i, 'size', e.target.value)}
+                                        placeholder="e.g. M, L, XL"
+                                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                                    />
+                                </div>
+                                <div className="w-24 space-y-1">
+                                    <label className="text-[11px] text-muted-foreground">Color</label>
+                                    <input
+                                        type="text"
+                                        value={variant.color}
+                                        onChange={(e) => updateVariant(i, 'color', e.target.value)}
+                                        placeholder="e.g. Red"
+                                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                                    />
+                                </div>
+                                <div className="w-28 space-y-1">
+                                    <label className="text-[11px] text-muted-foreground">Price ($)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={variant.price}
+                                        onChange={(e) => updateVariant(i, 'price', e.target.value)}
+                                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                                    />
+                                    {errors[`variants.${i}.price` as keyof typeof errors] && (
+                                        <p className="text-[10px] text-destructive">{errors[`variants.${i}.price` as keyof typeof errors]}</p>
+                                    )}
+                                </div>
+                                <div className="w-28 space-y-1">
+                                    <label className="text-[11px] text-muted-foreground">Original ($)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={variant.original_price}
+                                        onChange={(e) => updateVariant(i, 'original_price', e.target.value)}
+                                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1.5 pb-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={variant.in_stock}
+                                        onChange={(e) => updateVariant(i, 'in_stock', e.target.checked)}
+                                        className="h-3.5 w-3.5 rounded border-input"
+                                    />
+                                    <span className="text-[11px]">In Stock</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => removeVariant(i)}
+                                    className="mb-0.5 rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ))}
+                        {errors.variants && <p className="text-sm text-destructive">{errors.variants}</p>}
                     </div>
 
                     <div className="flex gap-3">

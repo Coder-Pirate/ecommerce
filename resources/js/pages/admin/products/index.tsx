@@ -28,6 +28,7 @@ type Product = {
     category: Category | null;
     sub_category: { id: number; name: string } | null;
     images: { id: number; image_path: string; sort_order: number }[];
+    variants: { id: number; size: string | null; color: string | null; price: string }[];
 };
 
 type PaginatedProducts = {
@@ -171,6 +172,7 @@ export default function ProductsIndex() {
                                 <th className="px-4 py-3 text-left font-medium">Name</th>
                                 <th className="px-4 py-3 text-left font-medium">Category</th>
                                 <th className="px-4 py-3 text-left font-medium">Price</th>
+                                <th className="px-4 py-3 text-left font-medium">Variants</th>
                                 <th className="px-4 py-3 text-left font-medium">Stock</th>
                                 <th className="px-4 py-3 text-right font-medium">Actions</th>
                             </tr>
@@ -198,6 +200,13 @@ export default function ProductsIndex() {
                                             <span className="ml-1 text-xs text-muted-foreground line-through">
                                                 {formatPrice(product.original_price)}
                                             </span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-muted-foreground">
+                                        {product.variants.length > 0 ? (
+                                            <span className="text-xs">{product.variants.length} variant{product.variants.length > 1 ? 's' : ''}</span>
+                                        ) : (
+                                            <span className="text-xs">—</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -231,7 +240,7 @@ export default function ProductsIndex() {
                             ))}
                             {products.data.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                                         No products found.
                                     </td>
                                 </tr>

@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Heart, Minus, Plus, ShoppingCart, Truck } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
 import type { Product } from '@/types/global';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,16 @@ export default function ProductDetail() {
     const { product, relatedProducts } = usePage<{ product: Product; relatedProducts: Product[] }>().props;
     const [quantity, setQuantity] = useState(1);
     const [selectedImage, setSelectedImage] = useState(0);
+    const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+
+    const variants = product.variants || [];
+    const sizes = useMemo(() => [...new Set(variants.filter((v) => v.size).map((v) => v.size!))], [variants]);
+    const colors = useMemo(() => [...new Set(variants.filter((v) => v.color).map((v) => v.color!))], [variants]);
+
+    const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? null;
+    const activePrice = selectedVariant ? selectedVariant.price : product.price;
+    const activeOriginalPrice = selectedVariant ? selectedVariant.original_price : product.original_price;
+    const activeInStock = selectedVariant ? selectedVariant.in_stock : product.in_stock;
 
     if (!product) {
         return (
@@ -34,8 +44,8 @@ export default function ProductDetail() {
         );
     }
 
-    const discount = product.original_price
-        ? Math.round(((parseFloat(product.original_price) - parseFloat(product.price)) / parseFloat(product.original_price)) * 100)
+    const discount = activeOriginalPrice
+        ? Math.round(((parseFloat(activeOriginalPrice) - parseFloat(activePrice)) / parseFloat(activeOriginalPrice)) * 100)
         : 0;
 
     return (
@@ -83,9 +93,9 @@ export default function ProductDetail() {
                         <h1 className="mb-2 text-2xl font-bold md:text-3xl">{product.name}</h1>
 
                         <div className="mb-4 flex items-baseline gap-3">
-                            <span className="text-3xl font-bold text-primary">{formatPrice(product.price)}</span>
-                            {product.original_price && (
-                                <span className="text-lg text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
+                            <span className="text-3xl font-bold text-primary">{formatPrice(activePrice)}</span>
+                            {activeOriginalPrice && (
+                                <span className="text-lg text-muted-foreground line-through">{formatPrice(activeOriginalPrice)}</span>
                             )}
                             {discount > 0 && (
                                 <Badge className="bg-red-500 text-white hover:bg-red-500">-{discount}%</Badge>
@@ -93,6 +103,72 @@ export default function ProductDetail() {
                         </div>
 
                         <p className="mb-6 text-sm leading-relaxed text-muted-foreground">{product.description}</p>
+
+                        {/* Variant selectors */}
+                        {variants.length > 0 && (
+                            <div className="mb-6 space-y-4">
+                                {sizes.length > 0 && (
+                                    <div>
+                                        <span className="mb-2 block text-sm font-medium">Size</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {sizes.map((size) => {
+                                                const matchingVariants = variants.filter((v) => v.size === size);
+                                                const isSelected = selectedVariant?.size === size;
+                                                return (
+                                                    <button
+                                                        key={size}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const match = matchingVariants.find(
+                                                                (v) => !selectedVariant?.color || v.color === selectedVariant.color,
+                                                            ) || matchingVariants[0];
+                                                            setSelectedVariantId(match.id);
+                                                        }}
+                                                        className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                                            isSelected
+                                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                                : 'border-input hover:border-primary/50'
+                                                        }`}
+                                                    >
+                                                        {size}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                                {colors.length > 0 && (
+                                    <div>
+                                        <span className="mb-2 block text-sm font-medium">Color</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {colors.map((color) => {
+                                                const matchingVariants = variants.filter((v) => v.color === color);
+                                                const isSelected = selectedVariant?.color === color;
+                                                return (
+                                                    <button
+                                                        key={color}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const match = matchingVariants.find(
+                                                                (v) => !selectedVariant?.size || v.size === selectedVariant.size,
+                                                            ) || matchingVariants[0];
+                                                            setSelectedVariantId(match.id);
+                                                        }}
+                                                        className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                                                            isSelected
+                                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                                : 'border-input hover:border-primary/50'
+                                                        }`}
+                                                    >
+                                                        {color}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <Separator className="mb-6" />
 
@@ -122,10 +198,10 @@ export default function ProductDetail() {
 
                         {/* Actions */}
                         <div className="mb-6 flex gap-3">
-                            <Button size="lg" className="flex-1" disabled={!product.in_stock} asChild>
+                            <Button size="lg" className="flex-1" disabled={!activeInStock} asChild>
                                 <Link href="/cart">
                                     <ShoppingCart className="mr-2 h-4 w-4" />
-                                    {product.in_stock ? 'Add to Cart' : 'Out of Stock'}
+                                    {activeInStock ? 'Add to Cart' : 'Out of Stock'}
                                 </Link>
                             </Button>
                             <Button variant="outline" size="lg">
@@ -140,7 +216,7 @@ export default function ProductDetail() {
                                 <span>Free shipping on orders over $50</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                {product.in_stock ? (
+                                {activeInStock ? (
                                     <span className="text-green-600">● In Stock</span>
                                 ) : (
                                     <span className="text-red-500">● Out of Stock</span>

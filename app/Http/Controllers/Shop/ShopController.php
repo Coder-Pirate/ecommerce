@@ -22,7 +22,7 @@ class ShopController extends Controller
     {
         return Inertia::render('shop/home', [
             'categories' => $this->categories(),
-            'featuredProducts' => Product::with('category:id,name', 'images')
+            'featuredProducts' => Product::with('category:id,name', 'images', 'variants')
                 ->where('in_stock', true)
                 ->latest()
                 ->limit(8)
@@ -34,14 +34,14 @@ class ShopController extends Controller
     {
         return Inertia::render('shop/products', [
             'categories' => $this->categories(),
-            'products' => Product::with('category:id,name', 'images')->orderBy('created_at', 'desc')->get(),
+            'products' => Product::with('category:id,name', 'images', 'variants')->orderBy('created_at', 'desc')->get(),
         ]);
     }
 
     public function productDetail(int $id): Response
     {
-        $product = Product::with('category:id,name', 'subCategory:id,name', 'images')->findOrFail($id);
-        $related = Product::with('category:id,name', 'images')
+        $product = Product::with('category:id,name', 'subCategory:id,name', 'images', 'variants')->findOrFail($id);
+        $related = Product::with('category:id,name', 'images', 'variants')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->limit(4)

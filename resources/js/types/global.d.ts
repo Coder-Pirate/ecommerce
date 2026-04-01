@@ -13,6 +13,16 @@ export type ProductImage = {
     sort_order: number;
 };
 
+export type ProductVariant = {
+    id: number;
+    product_id: number;
+    size: string | null;
+    color: string | null;
+    price: string;
+    original_price: string | null;
+    in_stock: boolean;
+};
+
 export type Product = {
     id: number;
     category_id: number;
@@ -25,6 +35,7 @@ export type Product = {
     created_at: string;
     updated_at: string;
     images?: ProductImage[];
+    variants?: ProductVariant[];
     category?: SharedCategory;
     sub_category?: { id: number; name: string } | null;
 };

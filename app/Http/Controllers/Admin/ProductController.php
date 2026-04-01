@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\ProductVariant;
 use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class ProductController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Product::with('category', 'subCategory', 'images');
+        $query = Product::with('category', 'subCategory', 'images', 'variants');
 
         if ($search = $request->input('search')) {
             $query->where('name', 'like', "%{$search}%");
@@ -60,12 +61,22 @@ class ProductController extends Controller
             'in_stock' => ['boolean'],
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.size' => ['nullable', 'string', 'max:50'],
+            'variants.*.color' => ['nullable', 'string', 'max:50'],
+            'variants.*.price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'variants.*.original_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'variants.*.in_stock' => ['boolean'],
         ]);
 
-        $product = Product::create(collect($validated)->except('images')->toArray());
+        $product = Product::create(collect($validated)->except(['images', 'variants'])->toArray());
 
         if ($request->hasFile('images')) {
             $this->storeImages($product, $request->file('images'));
+        }
+
+        if (!empty($validated['variants'])) {
+            $this->syncVariants($product, $validated['variants']);
         }
 
         return redirect()->route('admin.products.index')->with('success', 'Product created successfully.');
@@ -73,7 +84,7 @@ class ProductController extends Controller
 
     public function edit(Product $product): Response
     {
-        $product->load('category', 'subCategory', 'images');
+        $product->load('category', 'subCategory', 'images', 'variants');
 
         return Inertia::render('admin/products/edit', [
             'product' => $product,
@@ -96,9 +107,16 @@ class ProductController extends Controller
             'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'remove_images' => ['nullable', 'array'],
             'remove_images.*' => ['integer', 'exists:product_images,id'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.id' => ['nullable', 'integer'],
+            'variants.*.size' => ['nullable', 'string', 'max:50'],
+            'variants.*.color' => ['nullable', 'string', 'max:50'],
+            'variants.*.price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'variants.*.original_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'variants.*.in_stock' => ['boolean'],
         ]);
 
-        $product->update(collect($validated)->except(['images', 'remove_images'])->toArray());
+        $product->update(collect($validated)->except(['images', 'remove_images', 'variants'])->toArray());
 
         // Remove selected images
         if ($request->input('remove_images')) {
@@ -120,6 +138,9 @@ class ProductController extends Controller
             $maxSort = $product->images()->max('sort_order') ?? -1;
             $this->storeImages($product, $request->file('images'), $maxSort + 1);
         }
+
+        // Sync variants
+        $this->syncVariants($product, $validated['variants'] ?? []);
 
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
     }
@@ -158,5 +179,43 @@ class ProductController extends Controller
                 'sort_order' => $startSort + $i,
             ]);
         }
+    }
+
+    private function syncVariants(Product $product, array $variants): void
+    {
+        $keepIds = [];
+
+        foreach ($variants as $variant) {
+            if (!empty($variant['id'])) {
+                $existing = ProductVariant::where('id', $variant['id'])
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                if ($existing) {
+                    $existing->update([
+                        'size' => $variant['size'] ?? null,
+                        'color' => $variant['color'] ?? null,
+                        'price' => $variant['price'],
+                        'original_price' => $variant['original_price'] ?? null,
+                        'in_stock' => $variant['in_stock'] ?? true,
+                    ]);
+                    $keepIds[] = $existing->id;
+                    continue;
+                }
+            }
+
+            $new = ProductVariant::create([
+                'product_id' => $product->id,
+                'size' => $variant['size'] ?? null,
+                'color' => $variant['color'] ?? null,
+                'price' => $variant['price'],
+                'original_price' => $variant['original_price'] ?? null,
+                'in_stock' => $variant['in_stock'] ?? true,
+            ]);
+            $keepIds[] = $new->id;
+        }
+
+        // Delete removed variants
+        $product->variants()->whereNotIn('id', $keepIds)->delete();
     }
 }
