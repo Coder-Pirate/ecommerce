@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExportUsersController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\Admin\UserController;
@@ -45,6 +46,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::resource('categories', CategoryController::class)->except(['show']);
     Route::resource('sub-categories', SubCategoryController::class)->except(['show']);
     Route::resource('products', ProductController::class)->except(['show']);
+    Route::resource('orders', AdminOrderController::class)->except(['edit']);
 });
 
 // Manager routes
