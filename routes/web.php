@@ -1,24 +1,25 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExportUsersController;
+use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
+use App\Http\Controllers\Shop\ShopController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
-Route::inertia('/', 'shop/home')->name('home');
+Route::get('/', [ShopController::class, 'home'])->name('home');
 
 // Shop routes
-Route::inertia('/products', 'shop/products')->name('shop.products');
-Route::get('/product/{id}', function (int $id) {
-    return inertia('shop/product-detail', ['id' => $id]);
-})->name('shop.product');
-Route::inertia('/cart', 'shop/cart')->name('shop.cart');
-Route::inertia('/checkout', 'shop/checkout')->name('shop.checkout');
-Route::inertia('/about', 'shop/about')->name('about');
-Route::inertia('/contact', 'shop/contact')->name('contact');
+Route::get('/products', [ShopController::class, 'products'])->name('shop.products');
+Route::get('/product/{id}', [ShopController::class, 'productDetail'])->name('shop.product');
+Route::get('/cart', [ShopController::class, 'cart'])->name('shop.cart');
+Route::get('/checkout', [ShopController::class, 'checkout'])->name('shop.checkout');
+Route::get('/about', [ShopController::class, 'about'])->name('about');
+Route::get('/contact', [ShopController::class, 'contact'])->name('contact');
 
 // Redirect /dashboard to the correct role-based dashboard
 Route::middleware(['auth', 'verified'])->get('dashboard', function () {
@@ -37,6 +38,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('users/export/excel', [ExportUsersController::class, 'excel'])->name('users.export.excel');
     Route::get('users/export/pdf', [ExportUsersController::class, 'pdf'])->name('users.export.pdf');
     Route::resource('users', UserController::class)->except(['show']);
+    Route::resource('categories', CategoryController::class)->except(['show']);
+    Route::resource('sub-categories', SubCategoryController::class)->except(['show']);
 });
 
 // Manager routes

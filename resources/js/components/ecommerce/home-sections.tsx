@@ -1,6 +1,6 @@
-import { Link } from '@inertiajs/react';
-import { ArrowRight, Star, TrendingUp, Truck, Shield, RotateCcw } from 'lucide-react';
-import { categories } from '@/components/ecommerce/category-data';
+import { Link, usePage } from '@inertiajs/react';
+import { ArrowRight, Star, TrendingUp, Truck, Shield, RotateCcw, Tag } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,22 +32,29 @@ export function HeroBanner() {
 }
 
 export function CategoryGrid() {
+    const { categories } = usePage().props;
+
     return (
         <section>
             <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold md:text-xl">Shop by Category</h2>
-                <Link href="#" className="text-sm font-medium text-primary hover:underline">
+                <Link href="/products" className="text-sm font-medium text-primary hover:underline">
                     View all
                 </Link>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {categories.length === 0 && (
+                    <p className="col-span-full text-center text-sm text-muted-foreground py-8">No categories yet.</p>
+                )}
                 {categories.map((cat) => {
-                    const Icon = cat.icon;
+                    const Icon = cat.icon
+                        ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon] || Tag
+                        : Tag;
 
                     return (
                         <Link
-                            key={cat.name}
-                            href={cat.href}
+                            key={cat.id}
+                            href={`/products?category=${cat.id}`}
                             className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-all hover:border-primary/30 hover:shadow-md"
                         >
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">

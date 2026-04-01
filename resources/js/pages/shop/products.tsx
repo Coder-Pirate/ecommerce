@@ -1,15 +1,16 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Filter, Star } from 'lucide-react';
 import { useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
 import { products, formatPrice } from '@/components/ecommerce/product-data';
-import { categories } from '@/components/ecommerce/category-data';
+import type { SharedCategory } from '@/types/global';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
 export default function ShopProducts() {
+    const { categories } = usePage<{ categories: SharedCategory[] }>().props;
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState<'default' | 'price-low' | 'price-high' | 'rating'>('default');

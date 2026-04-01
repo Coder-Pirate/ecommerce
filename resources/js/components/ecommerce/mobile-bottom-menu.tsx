@@ -1,8 +1,21 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Grid3x3, Home, ShoppingBag, ShoppingCart, User } from 'lucide-react';
+import { ChevronDown, ChevronRight, Grid3x3, Home, ShoppingBag, ShoppingCart, Tag, User } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { useState } from 'react';
-import { categories } from '@/components/ecommerce/category-data';
 import { cn } from '@/lib/utils';
+
+type SubCategory = {
+    id: number;
+    category_id: number;
+    name: string;
+};
+
+type DbCategory = {
+    id: number;
+    name: string;
+    icon: string | null;
+    sub_categories: SubCategory[];
+};
 
 function MobileCategorySheet({
     open,
@@ -11,7 +24,8 @@ function MobileCategorySheet({
     open: boolean;
     onClose: () => void;
 }) {
-    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const { categories } = usePage<{ categories: DbCategory[] }>().props;
+    const [expandedId, setExpandedId] = useState<number | null>(null);
 
     if (!open) {
         return null;
@@ -28,15 +42,18 @@ function MobileCategorySheet({
                     </button>
                 </div>
                 <div className="p-4">
-                    <div className="grid grid-cols-2 gap-3">
-                        {categories.map((cat, idx) => {
-                            const Icon = cat.icon;
-                            const isExpanded = expandedIndex === idx;
+                    <div className="space-y-2">
+                        {categories.map((cat) => {
+                            const Icon = cat.icon
+                                ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon] || Tag
+                                : Tag;
+                            const hasSubs = cat.sub_categories && cat.sub_categories.length > 0;
+                            const isExpanded = expandedId === cat.id;
 
                             return (
-                                <div key={cat.name} className="col-span-2">
+                                <div key={cat.id}>
                                     <button
-                                        onClick={() => setExpandedIndex(isExpanded ? null : idx)}
+                                        onClick={() => hasSubs ? setExpandedId(isExpanded ? null : cat.id) : onClose()}
                                         className={cn(
                                             'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
                                             isExpanded
@@ -54,14 +71,20 @@ function MobileCategorySheet({
                                         >
                                             <Icon className="h-4 w-4" />
                                         </div>
-                                        <span className="text-sm font-medium">{cat.name}</span>
+                                        <span className="flex-1 text-sm font-medium">{cat.name}</span>
+                                        {hasSubs && (
+                                            isExpanded
+                                                ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                                : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                        )}
                                     </button>
-                                    {isExpanded && (
+                                    {isExpanded && hasSubs && (
                                         <div className="mt-2 ml-4 grid grid-cols-2 gap-2">
-                                            {cat.subcategories.map((sub) => (
+                                            {cat.sub_categories.map((sub) => (
                                                 <Link
-                                                    key={sub.name}
-                                                    href={sub.href}
+                                                    key={sub.id}
+                                                    href={`/products?category=${cat.id}&sub=${sub.id}`}
+                                                    onClick={onClose}
                                                     className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                                                 >
                                                     {sub.name}
@@ -72,6 +95,9 @@ function MobileCategorySheet({
                                 </div>
                             );
                         })}
+                        {categories.length === 0 && (
+                            <p className="py-8 text-center text-sm text-muted-foreground">No categories yet.</p>
+                        )}
                     </div>
                 </div>
             </div>

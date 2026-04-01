@@ -1,18 +1,33 @@
-import { Link } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { ChevronDown, ChevronRight, Tag, X } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { useState } from 'react';
-import type { Category } from '@/components/ecommerce/category-data';
-import { categories } from '@/components/ecommerce/category-data';
 import { cn } from '@/lib/utils';
 
-function CategoryItem({ category, desktopCollapsed, onExpand }: { category: Category; desktopCollapsed: boolean; onExpand: () => void }) {
+type SubCategory = {
+    id: number;
+    category_id: number;
+    name: string;
+};
+
+type DbCategory = {
+    id: number;
+    name: string;
+    icon: string | null;
+    sub_categories: SubCategory[];
+};
+
+function CategoryItem({ category, desktopCollapsed, onExpand }: { category: DbCategory; desktopCollapsed: boolean; onExpand: () => void }) {
     const [expanded, setExpanded] = useState(false);
-    const Icon = category.icon;
+    const Icon = category.icon
+        ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[category.icon] || Tag
+        : Tag;
+    const hasSubs = category.sub_categories && category.sub_categories.length > 0;
 
     const fullItem = (
         <li className={desktopCollapsed ? 'lg:hidden' : ''}>
             <button
-                onClick={() => setExpanded(!expanded)}
+                onClick={() => hasSubs ? setExpanded(!expanded) : undefined}
                 className={cn(
                     'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground',
                     expanded && 'bg-accent/50 text-accent-foreground',
@@ -20,18 +35,18 @@ function CategoryItem({ category, desktopCollapsed, onExpand }: { category: Cate
             >
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1 text-left">{category.name}</span>
-                {expanded ? (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                {hasSubs && (
+                    expanded
+                        ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
             </button>
-            {expanded && (
+            {expanded && hasSubs && (
                 <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
-                    {category.subcategories.map((sub) => (
-                        <li key={sub.name}>
+                    {category.sub_categories.map((sub) => (
+                        <li key={sub.id}>
                             <Link
-                                href={sub.href}
+                                href={`/products?category=${category.id}&sub=${sub.id}`}
                                 className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                             >
                                 {sub.name}
@@ -74,6 +89,8 @@ export function CategorySidebar({
     desktopCollapsed: boolean;
     onToggleDesktop: () => void;
 }) {
+    const { categories } = usePage<{ categories: DbCategory[] }>().props;
+
     return (
         <>
             {/* Mobile overlay */}
@@ -143,7 +160,7 @@ export function CategorySidebar({
                     )}
                     <ul className="space-y-0.5">
                         {categories.map((cat) => (
-                            <CategoryItem key={cat.name} category={cat} desktopCollapsed={desktopCollapsed} onExpand={onToggleDesktop} />
+                            <CategoryItem key={cat.id} category={cat} desktopCollapsed={desktopCollapsed} onExpand={onToggleDesktop} />
                         ))}
                     </ul>
                 </div>
