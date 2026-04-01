@@ -8,9 +8,17 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::inertia('/', 'shop/home')->name('home');
+
+// Shop routes
+Route::inertia('/products', 'shop/products')->name('shop.products');
+Route::get('/product/{id}', function (int $id) {
+    return inertia('shop/product-detail', ['id' => $id]);
+})->name('shop.product');
+Route::inertia('/cart', 'shop/cart')->name('shop.cart');
+Route::inertia('/checkout', 'shop/checkout')->name('shop.checkout');
+Route::inertia('/about', 'shop/about')->name('about');
+Route::inertia('/contact', 'shop/contact')->name('contact');
 
 // Redirect /dashboard to the correct role-based dashboard
 Route::middleware(['auth', 'verified'])->get('dashboard', function () {
