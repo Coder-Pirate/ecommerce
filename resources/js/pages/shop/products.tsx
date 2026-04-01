@@ -1,27 +1,30 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Filter, Star } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import { useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
-import { products, formatPrice } from '@/components/ecommerce/product-data';
-import type { SharedCategory } from '@/types/global';
+import type { SharedCategory, Product } from '@/types/global';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
+function formatPrice(price: string | null): string {
+    if (!price) return '';
+    return `$${parseFloat(price).toFixed(2)}`;
+}
+
 export default function ShopProducts() {
-    const { categories } = usePage<{ categories: SharedCategory[] }>().props;
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const { categories, products } = usePage<{ categories: SharedCategory[]; products: Product[] }>().props;
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [search, setSearch] = useState('');
-    const [sortBy, setSortBy] = useState<'default' | 'price-low' | 'price-high' | 'rating'>('default');
+    const [sortBy, setSortBy] = useState<'default' | 'price-low' | 'price-high'>('default');
 
     const filtered = products
-        .filter((p) => !selectedCategory || p.category === selectedCategory)
+        .filter((p) => !selectedCategory || p.category_id === selectedCategory)
         .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()))
         .sort((a, b) => {
-            if (sortBy === 'price-low') return a.price - b.price;
-            if (sortBy === 'price-high') return b.price - a.price;
-            if (sortBy === 'rating') return b.rating - a.rating;
+            if (sortBy === 'price-low') return parseFloat(a.price) - parseFloat(b.price);
+            if (sortBy === 'price-high') return parseFloat(b.price) - parseFloat(a.price);
 
             return 0;
         });
@@ -51,7 +54,6 @@ export default function ShopProducts() {
                             <option value="default">Sort by</option>
                             <option value="price-low">Price: Low to High</option>
                             <option value="price-high">Price: High to Low</option>
-                            <option value="rating">Top Rated</option>
                         </select>
                     </div>
                 </div>
@@ -67,10 +69,10 @@ export default function ShopProducts() {
                     </Button>
                     {categories.map((cat) => (
                         <Button
-                            key={cat.name}
-                            variant={selectedCategory === cat.name ? 'default' : 'outline'}
+                            key={cat.id}
+                            variant={selectedCategory === cat.id ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setSelectedCategory(cat.name)}
+                            onClick={() => setSelectedCategory(cat.id)}
                         >
                             {cat.name}
                         </Button>
@@ -82,29 +84,31 @@ export default function ShopProducts() {
                     {filtered.map((product) => (
                         <Link key={product.id} href={`/product/${product.id}`}>
                             <Card className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
-                                <div className="relative flex aspect-[4/3] items-center justify-center bg-muted/30 text-3xl transition-transform group-hover:scale-105">
-                                    {product.image}
-                                    {!product.inStock && (
+                                <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/30 transition-transform group-hover:scale-105">
+                                    {product.images?.[0] ? (
+                                        <img src={`/${product.images[0].image_path}`} alt={product.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <span className="text-3xl">📦</span>
+                                    )}
+                                    {!product.in_stock && (
                                         <Badge variant="secondary" className="absolute left-2 top-2 text-[10px]">
                                             Out of stock
                                         </Badge>
                                     )}
-                                    {product.originalPrice > product.price && (
+                                    {product.original_price && parseFloat(product.original_price) > parseFloat(product.price) && (
                                         <Badge className="absolute right-2 top-2 bg-red-500 text-[10px] text-white hover:bg-red-500">
-                                            -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                                            -{Math.round(((parseFloat(product.original_price) - parseFloat(product.price)) / parseFloat(product.original_price)) * 100)}%
                                         </Badge>
                                     )}
                                 </div>
                                 <CardContent className="p-2">
-                                    <p className="mb-0.5 text-[10px] text-muted-foreground">{product.category}</p>
+                                    <p className="mb-0.5 text-[10px] text-muted-foreground">{product.category?.name}</p>
                                     <h3 className="mb-0.5 truncate text-xs font-medium sm:text-sm">{product.name}</h3>
-                                    <div className="mb-0.5 flex items-center gap-0.5">
-                                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                        <span className="text-[10px] text-muted-foreground">{product.rating}</span>
-                                    </div>
                                     <div className="flex items-center gap-1">
                                         <span className="text-xs font-bold text-primary sm:text-sm">{formatPrice(product.price)}</span>
-                                        <span className="text-[10px] text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
+                                        {product.original_price && (
+                                            <span className="text-[10px] text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

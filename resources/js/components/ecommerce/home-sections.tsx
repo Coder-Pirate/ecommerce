@@ -1,9 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Star, TrendingUp, Truck, Shield, RotateCcw, Tag } from 'lucide-react';
+import { ArrowRight, TrendingUp, Truck, Shield, RotateCcw, Tag } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { Product } from '@/types/global';
 
 export function HeroBanner() {
     return (
@@ -69,46 +70,47 @@ export function CategoryGrid() {
     );
 }
 
-const featuredProducts = [
-    { name: 'Wireless Headphones', price: '$79.99', originalPrice: '$129.99', rating: 4.5, image: '🎧' },
-    { name: 'Smart Watch Pro', price: '$199.99', originalPrice: '$299.99', rating: 4.8, image: '⌚' },
-    { name: 'Running Shoes', price: '$59.99', originalPrice: '$89.99', rating: 4.3, image: '👟' },
-    { name: 'Organic Face Cream', price: '$24.99', originalPrice: '$39.99', rating: 4.7, image: '🧴' },
-    { name: 'Laptop Backpack', price: '$34.99', originalPrice: '$54.99', rating: 4.4, image: '🎒' },
-    { name: 'Coffee Maker', price: '$89.99', originalPrice: '$149.99', rating: 4.6, image: '☕' },
-    { name: 'Bluetooth Speaker', price: '$49.99', originalPrice: '$79.99', rating: 4.5, image: '🔊' },
-    { name: 'Desk Lamp', price: '$29.99', originalPrice: '$49.99', rating: 4.2, image: '💡' },
-    { name: 'Yoga Mat', price: '$19.99', originalPrice: '$34.99', rating: 4.6, image: '🧘' },
-    { name: 'Sunglasses', price: '$39.99', originalPrice: '$69.99', rating: 4.3, image: '🕶️' },
-];
-
 export function FeaturedProducts() {
+    const { featuredProducts } = usePage<{ featuredProducts: Product[] }>().props;
+
+    function formatPrice(price: string | null): string {
+        if (!price) return '';
+        return `$${parseFloat(price).toFixed(2)}`;
+    }
+
     return (
         <section>
             <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold md:text-xl">Featured Products</h2>
-                <Link href="#" className="text-sm font-medium text-primary hover:underline">
+                <Link href="/products" className="text-sm font-medium text-primary hover:underline">
                     See more
                 </Link>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5">
+                {featuredProducts.length === 0 && (
+                    <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No products yet.</p>
+                )}
                 {featuredProducts.map((product) => (
-                    <Card key={product.name} className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
-                        <div className="flex aspect-[4/3] items-center justify-center bg-muted/30 text-2xl sm:text-3xl transition-transform group-hover:scale-105">
-                            {product.image}
-                        </div>
-                        <CardContent className="p-2">
-                            <h3 className="mb-0.5 truncate text-[11px] sm:text-xs font-medium">{product.name}</h3>
-                            <div className="mb-0.5 flex items-center gap-0.5">
-                                <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
-                                <span className="text-[10px] text-muted-foreground">{product.rating}</span>
+                    <Link key={product.id} href={`/product/${product.id}`}>
+                        <Card className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
+                            <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/30 text-2xl sm:text-3xl transition-transform group-hover:scale-105">
+                                {product.images?.[0] ? (
+                                    <img src={`/${product.images[0].image_path}`} alt={product.name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <span>📦</span>
+                                )}
                             </div>
-                            <div className="flex flex-wrap items-center gap-1">
-                                <span className="text-[11px] sm:text-xs font-bold text-primary">{product.price}</span>
-                                <span className="text-[9px] sm:text-[10px] text-muted-foreground line-through">{product.originalPrice}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            <CardContent className="p-2">
+                                <h3 className="mb-0.5 truncate text-[11px] sm:text-xs font-medium">{product.name}</h3>
+                                <div className="flex flex-wrap items-center gap-1">
+                                    <span className="text-[11px] sm:text-xs font-bold text-primary">{formatPrice(product.price)}</span>
+                                    {product.original_price && (
+                                        <span className="text-[9px] sm:text-[10px] text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </Link>
                 ))}
             </div>
         </section>

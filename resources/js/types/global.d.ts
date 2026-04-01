@@ -6,6 +6,29 @@ export type SharedCategory = {
     icon: string | null;
 };
 
+export type ProductImage = {
+    id: number;
+    product_id: number;
+    image_path: string;
+    sort_order: number;
+};
+
+export type Product = {
+    id: number;
+    category_id: number;
+    sub_category_id: number | null;
+    name: string;
+    description: string | null;
+    price: string;
+    original_price: string | null;
+    in_stock: boolean;
+    created_at: string;
+    updated_at: string;
+    images?: ProductImage[];
+    category?: SharedCategory;
+    sub_category?: { id: number; name: string } | null;
+};
+
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {

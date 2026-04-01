@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +22,11 @@ class ShopController extends Controller
     {
         return Inertia::render('shop/home', [
             'categories' => $this->categories(),
+            'featuredProducts' => Product::with('category:id,name', 'images')
+                ->where('in_stock', true)
+                ->latest()
+                ->limit(8)
+                ->get(),
         ]);
     }
 
@@ -28,13 +34,22 @@ class ShopController extends Controller
     {
         return Inertia::render('shop/products', [
             'categories' => $this->categories(),
+            'products' => Product::with('category:id,name', 'images')->orderBy('created_at', 'desc')->get(),
         ]);
     }
 
     public function productDetail(int $id): Response
     {
+        $product = Product::with('category:id,name', 'subCategory:id,name', 'images')->findOrFail($id);
+        $related = Product::with('category:id,name', 'images')
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->limit(4)
+            ->get();
+
         return Inertia::render('shop/product-detail', [
-            'id' => $id,
+            'product' => $product,
+            'relatedProducts' => $related,
             'categories' => $this->categories(),
         ]);
     }

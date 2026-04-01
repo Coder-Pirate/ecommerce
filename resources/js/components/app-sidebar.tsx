@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, Shield, Users, UserCheck, Tag, Layers } from 'lucide-react';
+import { BookOpen, FolderGit2, LayoutGrid, Shield, Users, UserCheck, Tag, Layers, Package } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -24,6 +24,7 @@ function getNavItems(role: UserRole): NavItem[] {
                 { title: 'Manage Users', href: '/admin/users', icon: Users },
                 { title: 'Categories', href: '/admin/categories', icon: Tag },
                 { title: 'Sub Categories', href: '/admin/sub-categories', icon: Layers },
+                { title: 'Products', href: '/admin/products', icon: Package },
             ];
         case 'manager':
             return [
