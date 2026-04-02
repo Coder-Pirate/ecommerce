@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('address');
             $table->string('city');
             $table->string('zip');
+            $table->string('delivery_zone')->default('inside_dhaka');
+            $table->string('payment_method')->default('cod');
+            $table->string('payment_phone')->nullable();
+            $table->decimal('payment_amount', 10, 2)->nullable();
             $table->timestamps();
         });
 

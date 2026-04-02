@@ -18,6 +18,18 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('subtitle')->nullable();
             $table->text('hero_text')->nullable();
+            $table->string('badge_text')->nullable();
+            $table->string('phone')->nullable();
+            $table->json('use_cases')->nullable();
+            $table->string('use_cases_title')->nullable();
+            $table->json('features')->nullable();
+            $table->string('features_title')->nullable();
+            $table->json('specifications')->nullable();
+            $table->string('specifications_title')->nullable();
+            $table->json('why_buy')->nullable();
+            $table->string('why_buy_title')->nullable();
+            $table->string('checkout_banner_text')->nullable();
+            $table->string('footer_text')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

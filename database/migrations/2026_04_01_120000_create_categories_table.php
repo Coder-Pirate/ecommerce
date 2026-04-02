@@ -14,10 +14,18 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('sub_categories', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->string('name');
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('sub_categories');
         Schema::dropIfExists('categories');
     }
 };
