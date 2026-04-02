@@ -1,5 +1,5 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { Heart, Minus, Plus, ShoppingCart, Truck } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Heart, Minus, Plus, ShoppingCart, Truck, Zap } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
@@ -205,6 +205,10 @@ export default function ProductDetail() {
                                 className="flex-1"
                                 disabled={!activeInStock}
                                 onClick={() => {
+                                    if (variants.length > 0 && !selectedVariantId) {
+                                        toast.error('Please select a variation first');
+                                        return;
+                                    }
                                     const variantLabel = selectedVariant
                                         ? [selectedVariant.size, selectedVariant.color].filter(Boolean).join(' / ')
                                         : null;
@@ -226,6 +230,38 @@ export default function ProductDetail() {
                             >
                                 <ShoppingCart className="mr-2 h-4 w-4" />
                                 {activeInStock ? 'Add to Cart' : 'Out of Stock'}
+                            </Button>
+                            <Button
+                                size="lg"
+                                variant="secondary"
+                                className="flex-1"
+                                disabled={!activeInStock}
+                                onClick={() => {
+                                    if (variants.length > 0 && !selectedVariantId) {
+                                        toast.error('Please select a variation first');
+                                        return;
+                                    }
+                                    const variantLabel = selectedVariant
+                                        ? [selectedVariant.size, selectedVariant.color].filter(Boolean).join(' / ')
+                                        : null;
+                                    addToCart(
+                                        {
+                                            productId: product.id,
+                                            variantId: selectedVariant?.id ?? null,
+                                            name: product.name,
+                                            price: parseFloat(activePrice),
+                                            image: product.images?.[0]?.image_path ?? null,
+                                            variantLabel,
+                                            freeShipping: product.free_shipping,
+                                            shippingZones: (product.shipping_zones || []).map((z) => ({ zone: z.zone, charge: Number(z.charge) })),
+                                        },
+                                        quantity,
+                                    );
+                                    router.visit('/checkout');
+                                }}
+                            >
+                                <Zap className="mr-2 h-4 w-4" />
+                                Buy Now
                             </Button>
                             <Button variant="outline" size="lg">
                                 <Heart className="h-4 w-4" />
