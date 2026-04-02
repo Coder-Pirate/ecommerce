@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, FolderGit2, LayoutGrid, Shield, Users, UserCheck, Tag, Layers, Package } from 'lucide-react';
+import { BookOpen, ClipboardList, CreditCard, FileText, FolderGit2, LayoutGrid, Shield, Users, UserCheck, Tag, Layers, Package } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -27,6 +27,7 @@ function getNavItems(role: UserRole): NavItem[] {
                 { title: 'Products', href: '/admin/products', icon: Package },
                 { title: 'Orders', href: '/admin/orders', icon: ClipboardList },
                 { title: 'Landing Pages', href: '/admin/landing-pages', icon: FileText },
+                { title: 'Payment Methods', href: '/admin/payment-methods', icon: CreditCard },
             ];
         case 'manager':
             return [

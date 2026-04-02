@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     AlertDialog,
@@ -13,31 +13,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useFlashToast } from '@/hooks/use-flash-toast';
 
-type OrderItem = {
+type PaymentMethod = {
     id: number;
-    product_name: string;
-    variant_label: string | null;
-    price: string;
-    quantity: number;
-    total: string;
-};
-
-type Order = {
-    id: number;
-    order_number: string;
-    status: string;
-    subtotal: string;
-    shipping: string;
-    total: string;
-    first_name: string;
-    last_name: string;
-    email: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    is_active: boolean;
+    sort_order: number;
     created_at: string;
-    items: OrderItem[];
 };
 
-type PaginatedOrders = {
-    data: Order[];
+type PaginatedPaymentMethods = {
+    data: PaymentMethod[];
     links: { url: string | null; label: string; active: boolean }[];
     current_page: number;
     last_page: number;
@@ -48,43 +35,25 @@ type PaginatedOrders = {
 };
 
 type Props = {
-    orders: PaginatedOrders;
-    filters: { search?: string; status?: string; perPage?: string };
-    statuses: string[];
+    paymentMethods: PaginatedPaymentMethods;
+    filters: { search?: string; perPage?: string };
 };
 
 const perPageOptions = [10, 15, 25, 50, 100];
 
-const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    shipped: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    delivered: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-};
-
-function formatPrice(price: string | null): string {
-    if (!price) {
-        return '';
-    }
-
-    return `৳${parseFloat(price).toFixed(0)}`;
-}
-
-export default function OrdersIndex() {
-    const { orders, filters, statuses } = usePage<Props>().props;
+export default function PaymentMethodsIndex() {
+    const { paymentMethods, filters } = usePage<Props>().props;
     const [search, setSearch] = useState(filters.search || '');
-    const [status, setStatus] = useState(filters.status || '');
     const [perPage, setPerPage] = useState(filters.perPage || '10');
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isFirstRender = useRef(true);
-    const [deleteOrderId, setDeleteOrderId] = useState<number | null>(null);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
 
     useFlashToast();
 
-    const fetchOrders = useCallback(
+    const fetchData = useCallback(
         (params: Record<string, string>) => {
-            router.get('/admin/orders', params, {
+            router.get('/admin/payment-methods', params, {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
@@ -105,7 +74,7 @@ export default function OrdersIndex() {
         }
 
         debounceRef.current = setTimeout(() => {
-            fetchOrders({ search, status, perPage });
+            fetchData({ search, perPage });
         }, 300);
 
         return () => {
@@ -113,31 +82,35 @@ export default function OrdersIndex() {
                 clearTimeout(debounceRef.current);
             }
         };
-    }, [search, status, perPage, fetchOrders]);
+    }, [search, perPage, fetchData]);
+
+    function handleDelete(id: number) {
+        setDeleteId(id);
+    }
 
     function confirmDelete() {
-        if (deleteOrderId !== null) {
-            router.delete(`/admin/orders/${deleteOrderId}`, {
-                onFinish: () => setDeleteOrderId(null),
+        if (deleteId !== null) {
+            router.delete(`/admin/payment-methods/${deleteId}`, {
+                onFinish: () => setDeleteId(null),
             });
         }
     }
 
     return (
         <>
-            <Head title="Manage Orders" />
+            <Head title="Payment Methods" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
-                        <p className="text-muted-foreground">Manage customer orders.</p>
+                        <h2 className="text-2xl font-bold tracking-tight">Payment Methods</h2>
+                        <p className="text-muted-foreground">Manage available payment methods for checkout.</p>
                     </div>
                     <Link
-                        href="/admin/orders/create"
+                        href="/admin/payment-methods/create"
                         className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                         <Plus className="h-4 w-4" />
-                        Create Order
+                        Add Method
                     </Link>
                 </div>
 
@@ -146,24 +119,12 @@ export default function OrdersIndex() {
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Search by order #, name, email..."
+                            placeholder="Search by name..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full rounded-lg border border-input bg-background py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>
-                    <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="rounded-lg border border-input bg-background px-3 py-2 text-sm capitalize focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                        <option value="">All Statuses</option>
-                        {statuses.map((s) => (
-                            <option key={s} value={s} className="capitalize">
-                                {s}
-                            </option>
-                        ))}
-                    </select>
                     <select
                         value={perPage}
                         onChange={(e) => setPerPage(e.target.value)}
@@ -181,51 +142,42 @@ export default function OrdersIndex() {
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/50">
                             <tr>
-                                <th className="px-4 py-3 text-left font-medium">Order #</th>
-                                <th className="px-4 py-3 text-left font-medium">Customer</th>
-                                <th className="px-4 py-3 text-left font-medium">Items</th>
-                                <th className="px-4 py-3 text-left font-medium">Total</th>
+                                <th className="px-4 py-3 text-left font-medium">Name</th>
+                                <th className="px-4 py-3 text-left font-medium">Slug</th>
+                                <th className="px-4 py-3 text-left font-medium">Description</th>
                                 <th className="px-4 py-3 text-left font-medium">Status</th>
-                                <th className="px-4 py-3 text-left font-medium">Date</th>
+                                <th className="px-4 py-3 text-left font-medium">Order</th>
                                 <th className="px-4 py-3 text-right font-medium">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
-                            {orders.data.map((order) => (
-                                <tr key={order.id} className="hover:bg-muted/30">
-                                    <td className="px-4 py-3 font-medium">{order.order_number}</td>
+                            {paymentMethods.data.map((method) => (
+                                <tr key={method.id} className="hover:bg-muted/30">
+                                    <td className="px-4 py-3 font-medium">{method.name}</td>
+                                    <td className="px-4 py-3 text-muted-foreground">{method.slug}</td>
+                                    <td className="px-4 py-3 text-muted-foreground">{method.description || '—'}</td>
                                     <td className="px-4 py-3">
-                                        <div>{order.first_name} {order.last_name}</div>
-                                        <div className="text-xs text-muted-foreground">{order.email}</div>
-                                    </td>
-                                    <td className="px-4 py-3 text-muted-foreground">
-                                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                                    </td>
-                                    <td className="px-4 py-3 font-medium text-primary">{formatPrice(order.total)}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[order.status] || ''}`}>
-                                            {order.status}
+                                        <span
+                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                method.is_active
+                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            }`}
+                                        >
+                                            {method.is_active ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-muted-foreground">
-                                        {new Date(order.created_at).toLocaleDateString()}
-                                    </td>
+                                    <td className="px-4 py-3 text-muted-foreground">{method.sort_order}</td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Link
-                                                href={`/admin/orders/${order.id}`}
+                                                href={`/admin/payment-methods/${method.id}/edit`}
                                                 className="inline-flex items-center rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                                             >
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                            <Link
-                                                href={`/admin/orders/${order.id}/edit`}
-                                                className="inline-flex items-center rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                                            >
-                                                <Pencil className="h-4 w-4" />
+                                                <Edit className="h-4 w-4" />
                                             </Link>
                                             <button
-                                                onClick={() => setDeleteOrderId(order.id)}
+                                                onClick={() => handleDelete(method.id)}
                                                 className="inline-flex items-center rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -234,10 +186,10 @@ export default function OrdersIndex() {
                                     </td>
                                 </tr>
                             ))}
-                            {orders.data.length === 0 && (
+                            {paymentMethods.data.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                                        No orders found.
+                                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                        No payment methods found.
                                     </td>
                                 </tr>
                             )}
@@ -247,14 +199,14 @@ export default function OrdersIndex() {
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground">
-                        {orders.from && orders.to
-                            ? `Showing ${orders.from} to ${orders.to} of ${orders.total} results`
-                            : `${orders.total} results`}
+                        {paymentMethods.from && paymentMethods.to
+                            ? `Showing ${paymentMethods.from} to ${paymentMethods.to} of ${paymentMethods.total} results`
+                            : `${paymentMethods.total} results`}
                     </p>
 
-                    {orders.last_page > 1 && (
+                    {paymentMethods.last_page > 1 && (
                         <div className="flex gap-1">
-                            {orders.links.map((link, i) => (
+                            {paymentMethods.links.map((link, i) => (
                                 <Link
                                     key={i}
                                     href={link.url || '#'}
@@ -274,12 +226,12 @@ export default function OrdersIndex() {
                 </div>
             </div>
 
-            <AlertDialog open={deleteOrderId !== null} onOpenChange={(open) => !open && setDeleteOrderId(null)}>
+            <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Payment Method</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this order? This action cannot be undone.
+                            Are you sure you want to delete this payment method? This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -292,9 +244,9 @@ export default function OrdersIndex() {
     );
 }
 
-OrdersIndex.layout = {
+PaymentMethodsIndex.layout = {
     breadcrumbs: [
         { title: 'Admin Dashboard', href: '/admin/dashboard' },
-        { title: 'Orders', href: '/admin/orders' },
+        { title: 'Payment Methods', href: '/admin/payment-methods' },
     ],
 };

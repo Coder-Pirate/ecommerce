@@ -1,5 +1,5 @@
-import { Head, Link, useForm, router } from '@inertiajs/react';
-import { Lock, ShoppingBag } from 'lucide-react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
+import { Lock, ShoppingBag, Wallet } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
 import { useCart, clearCart } from '@/stores/use-cart';
@@ -13,7 +13,16 @@ function formatPrice(amount: number): string {
     return `৳${amount.toFixed(0)}`;
 }
 
+type PaymentMethodOption = {
+    name: string;
+    slug: string;
+    description: string | null;
+    account_number: string | null;
+    requires_payment_details: boolean;
+};
+
 export default function CheckoutPage() {
+    const { paymentMethods: serverMethods } = usePage<{ paymentMethods: PaymentMethodOption[] }>().props;
     const [deliveryZone, setDeliveryZone] = useState('');
     const { items, totalItems, subtotal, shipping } = useCart(deliveryZone);
     const total = subtotal + shipping;
@@ -41,6 +50,9 @@ export default function CheckoutPage() {
         city: '',
         zip: '',
         delivery_zone: '',
+        payment_method: serverMethods.length > 0 ? serverMethods[0].slug : '',
+        payment_phone: '',
+        payment_amount: '',
         items: [] as { product_id: number; variant_id: number | null; quantity: number }[],
     });
 
@@ -197,6 +209,69 @@ export default function CheckoutPage() {
                                         {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
                                     </div>
                                 </div>
+                            </Card>
+
+                            {/* Payment Method */}
+                            <Card className="p-4">
+                                <h2 className="mb-3 text-base font-semibold">Payment Method</h2>
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    {serverMethods.map((method) => (
+                                        <button
+                                            key={method.slug}
+                                            type="button"
+                                            onClick={() => setData('payment_method', method.slug)}
+                                            className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 text-center transition-colors ${
+                                                data.payment_method === method.slug
+                                                    ? 'border-primary bg-primary/10 text-primary'
+                                                    : 'border-input hover:border-primary/50'
+                                            }`}
+                                        >
+                                            <Wallet className="h-5 w-5" />
+                                            <span className="text-sm font-medium">{method.name}</span>
+                                            {method.description && <span className="text-[10px] text-muted-foreground">{method.description}</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                                {errors.payment_method && <p className="mt-2 text-xs text-destructive">{errors.payment_method}</p>}
+
+                                {data.payment_method && (() => {
+                                    const selectedMethod = serverMethods.find((m) => m.slug === data.payment_method);
+                                    if (!selectedMethod?.requires_payment_details) return null;
+                                    return (
+                                    <div className="mt-4 space-y-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+                                        {selectedMethod?.account_number && (
+                                            <p className="text-sm font-semibold text-primary">Send to: {selectedMethod.account_number}</p>
+                                        )}
+                                        <p className="text-xs font-medium text-primary">Send payment and enter details below:</p>
+                                        <div>
+                                            <Label htmlFor="payment_phone">Payment Number</Label>
+                                            <Input
+                                                id="payment_phone"
+                                                type="tel"
+                                                value={data.payment_phone}
+                                                onChange={(e) => setData('payment_phone', e.target.value)}
+                                                placeholder="01XXXXXXXXX"
+                                                className="mt-1"
+                                            />
+                                            {errors.payment_phone && <p className="mt-1 text-xs text-destructive">{errors.payment_phone}</p>}
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="payment_amount">Payment Amount (৳)</Label>
+                                            <Input
+                                                id="payment_amount"
+                                                type="number"
+                                                min={0}
+                                                step="any"
+                                                value={data.payment_amount}
+                                                onChange={(e) => setData('payment_amount', e.target.value)}
+                                                placeholder="0"
+                                                className="mt-1"
+                                            />
+                                            {errors.payment_amount && <p className="mt-1 text-xs text-destructive">{errors.payment_amount}</p>}
+                                        </div>
+                                    </div>
+                                    );
+                                })()}
                             </Card>
                         </div>
 

@@ -65,7 +65,7 @@ function formatPrice(price: string | null): string {
         return '';
     }
 
-    return `$${parseFloat(price).toFixed(2)}`;
+    return `৳${parseFloat(price).toFixed(0)}`;
 }
 
 export default function EditOrder({ order, products, statuses }: Props) {

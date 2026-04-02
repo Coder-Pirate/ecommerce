@@ -20,6 +20,9 @@ type Order = {
     id: number;
     order_number: string;
     status: string;
+    payment_method: string;
+    payment_phone: string | null;
+    payment_amount: string | null;
     subtotal: string;
     shipping: string;
     total: string;
@@ -39,6 +42,7 @@ type Order = {
 type Props = {
     order: Order;
     statuses: string[];
+    paymentMethods: Record<string, string>;
 };
 
 const statusColors: Record<string, string> = {
@@ -54,11 +58,11 @@ function formatPrice(price: string | null): string {
         return '';
     }
 
-    return `$${parseFloat(price).toFixed(2)}`;
+    return `৳${parseFloat(price).toFixed(0)}`;
 }
 
 export default function OrderShow() {
-    const { order, statuses } = usePage<Props>().props;
+    const { order, statuses, paymentMethods } = usePage<Props>().props;
     const [status, setStatus] = useState(order.status);
     const [saving, setSaving] = useState(false);
 
@@ -226,6 +230,24 @@ export default function OrderShow() {
                                 <p>{order.address}</p>
                                 <p>{order.city}, {order.zip}</p>
                             </div>
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                            <h3 className="mb-3 text-sm font-semibold">Payment Method</h3>
+                            <p className="text-sm font-medium">{paymentMethods[order.payment_method] || order.payment_method}</p>
+                            {order.payment_phone && (
+                                <div className="mt-2 text-sm">
+                                    <span className="text-muted-foreground">Number: </span>
+                                    <span className="font-medium">{order.payment_phone}</span>
+                                </div>
+                            )}
+                            {order.payment_amount && (
+                                <div className="mt-1 text-sm">
+                                    <span className="text-muted-foreground">Amount: </span>
+                                    <span className="font-medium">{formatPrice(order.payment_amount)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

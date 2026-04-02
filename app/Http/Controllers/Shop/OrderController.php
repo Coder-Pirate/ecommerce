@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
@@ -23,11 +24,27 @@ class OrderController extends Controller
             'city' => 'required|string|max:255',
             'zip' => 'required|string|max:20',
             'delivery_zone' => 'required|string|max:100',
+            'payment_method' => ['required', 'string', 'exists:payment_methods,slug', function ($attribute, $value, $fail) {
+                if (!PaymentMethod::where('slug', $value)->where('is_active', true)->exists()) {
+                    $fail('The selected payment method is not available.');
+                }
+            }],
+            'payment_phone' => ['nullable', 'string', 'max:20'],
+            'payment_amount' => ['nullable', 'numeric', 'min:0'],
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.variant_id' => 'nullable|integer|exists:product_variants,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
+
+        // Check if selected payment method requires payment details
+        $paymentMethod = PaymentMethod::where('slug', $validated['payment_method'])->first();
+        if ($paymentMethod && $paymentMethod->requires_payment_details) {
+            $request->validate([
+                'payment_phone' => 'required|string|max:20',
+                'payment_amount' => 'required|numeric|min:0',
+            ]);
+        }
 
         $deliveryZone = $validated['delivery_zone'];
 
@@ -88,6 +105,9 @@ class OrderController extends Controller
             'city' => $validated['city'],
             'zip' => $validated['zip'],
             'delivery_zone' => $deliveryZone,
+            'payment_method' => $validated['payment_method'],
+            'payment_phone' => $validated['payment_phone'] ?? null,
+            'payment_amount' => $validated['payment_amount'] ?? null,
         ]);
 
         foreach ($orderItems as $item) {
@@ -112,9 +132,25 @@ class OrderController extends Controller
             'city' => 'required|string|max:255',
             'zip' => 'required|string|max:20',
             'delivery_zone' => 'required|string|max:100',
+            'payment_method' => ['required', 'string', 'exists:payment_methods,slug', function ($attribute, $value, $fail) {
+                if (!PaymentMethod::where('slug', $value)->where('is_active', true)->exists()) {
+                    $fail('The selected payment method is not available.');
+                }
+            }],
+            'payment_phone' => ['nullable', 'string', 'max:20'],
+            'payment_amount' => ['nullable', 'numeric', 'min:0'],
             'variant_id' => 'nullable|integer|exists:product_variants,id',
             'quantity' => 'required|integer|min:1',
         ]);
+
+        // Check if selected payment method requires payment details
+        $paymentMethod = PaymentMethod::where('slug', $validated['payment_method'])->first();
+        if ($paymentMethod && $paymentMethod->requires_payment_details) {
+            $request->validate([
+                'payment_phone' => 'required|string|max:20',
+                'payment_amount' => 'required|numeric|min:0',
+            ]);
+        }
 
         $variant = $validated['variant_id'] ? ProductVariant::findOrFail($validated['variant_id']) : null;
         $deliveryZone = $validated['delivery_zone'];
@@ -156,6 +192,9 @@ class OrderController extends Controller
             'city' => $validated['city'],
             'zip' => $validated['zip'],
             'delivery_zone' => $deliveryZone,
+            'payment_method' => $validated['payment_method'],
+            'payment_phone' => $validated['payment_phone'] ?? null,
+            'payment_amount' => $validated['payment_amount'] ?? null,
         ]);
 
         $order->items()->create([
@@ -186,6 +225,7 @@ class OrderController extends Controller
         return \Inertia\Inertia::render('shop/order-success', [
             'order' => $order,
             'categories' => $categories,
+            'paymentMethods' => PaymentMethod::orderBy('sort_order')->pluck('name', 'slug'),
         ]);
     }
 }

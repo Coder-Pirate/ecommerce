@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip if shipping_charge was already removed by the zones_json migration
+        if (!Schema::hasColumn('products', 'shipping_charge')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
             $table->decimal('shipping_inside_dhaka', 8, 2)->default(0)->after('shipping_charge');
             $table->decimal('shipping_outside_dhaka', 8, 2)->default(0)->after('shipping_inside_dhaka');

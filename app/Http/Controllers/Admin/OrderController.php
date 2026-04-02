@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\RedirectResponse;
@@ -52,6 +53,7 @@ class OrderController extends Controller
         return Inertia::render('admin/orders/show', [
             'order' => $order,
             'statuses' => ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+            'paymentMethods' => PaymentMethod::orderBy('sort_order')->pluck('name', 'slug'),
         ]);
     }
 

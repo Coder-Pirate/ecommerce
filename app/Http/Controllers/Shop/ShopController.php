@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\LandingPage;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,6 +67,7 @@ class ShopController extends Controller
     {
         return Inertia::render('shop/checkout', [
             'categories' => $this->categories(),
+            'paymentMethods' => PaymentMethod::where('is_active', true)->orderBy('sort_order')->get(['name', 'slug', 'description', 'account_number', 'requires_payment_details']),
         ]);
     }
 
@@ -77,6 +79,7 @@ class ShopController extends Controller
         return Inertia::render('shop/landing', [
             'landingPage' => $landingPage,
             'product' => $product,
+            'paymentMethods' => PaymentMethod::where('is_active', true)->orderBy('sort_order')->get(['name', 'slug', 'description', 'account_number', 'requires_payment_details']),
         ]);
     }
 

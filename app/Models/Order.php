@@ -23,12 +23,16 @@ class Order extends Model
         'city',
         'zip',
         'delivery_zone',
+        'payment_method',
+        'payment_phone',
+        'payment_amount',
     ];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
         'shipping' => 'decimal:2',
         'total' => 'decimal:2',
+        'payment_amount' => 'decimal:2',
     ];
 
     public function user(): BelongsTo

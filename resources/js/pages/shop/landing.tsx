@@ -22,6 +22,7 @@ import {
     ThumbsUp,
     Truck,
     Volume2,
+    Wallet,
     Wifi,
     Zap,
 } from 'lucide-react';
@@ -31,6 +32,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/types/global';
+
+type PaymentMethodOption = {
+    name: string;
+    slug: string;
+    description: string | null;
+    account_number: string | null;
+    requires_payment_details: boolean;
+};
 
 type LandingPageData = {
     id: number;
@@ -65,7 +74,7 @@ function formatPrice(price: string | number | null): string {
 }
 
 export default function LandingPage() {
-    const { product, landingPage } = usePage<{ product: Product; landingPage: LandingPageData }>().props;
+    const { product, landingPage, paymentMethods: serverMethods } = usePage<{ product: Product; landingPage: LandingPageData; paymentMethods: PaymentMethodOption[] }>().props;
 
     const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
     const [quantity, setQuantity] = useState(1);
@@ -108,6 +117,9 @@ export default function LandingPage() {
         address: '',
         city: '',
         zip: '',
+        payment_method: serverMethods.length > 0 ? serverMethods[0].slug : '',
+        payment_phone: '',
+        payment_amount: '',
     });
 
     function handleSubmit(e: React.FormEvent) {
@@ -117,6 +129,9 @@ export default function LandingPage() {
             variant_id: selectedVariantId,
             quantity,
             delivery_zone: deliveryZone,
+            payment_method: formData.payment_method,
+            payment_phone: formData.payment_phone,
+            payment_amount: formData.payment_amount,
         }));
         post(`/lp/${landingPage.slug}`);
     }
@@ -124,6 +139,8 @@ export default function LandingPage() {
     function scrollToCheckout() {
         checkoutRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
+
+    const paymentMethodOptions = serverMethods;
 
     const heroImage = product.images && product.images.length > 0 ? `/${product.images[0].image_path}` : null;
 
@@ -494,6 +511,69 @@ export default function LandingPage() {
                                                 {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Payment Method */}
+                                    <div className="mt-5 rounded-xl border border-border bg-muted/50 p-5">
+                                        <h3 className="mb-3 text-sm font-bold">Payment Method</h3>
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                            {paymentMethodOptions.map((method) => (
+                                                <button
+                                                    key={method.slug}
+                                                    type="button"
+                                                    onClick={() => setData('payment_method', method.slug)}
+                                                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-center transition-colors ${
+                                                        data.payment_method === method.slug
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border hover:border-primary/50'
+                                                    }`}
+                                                >
+                                                    <Wallet className="h-5 w-5" />
+                                                    <span className="text-xs font-medium">{method.name}</span>
+                                                    {method.description && <span className="text-[10px] text-muted-foreground">{method.description}</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {errors.payment_method && <p className="mt-2 text-xs text-destructive">{errors.payment_method}</p>}
+
+                                        {data.payment_method && (() => {
+                                            const selectedMethod = paymentMethodOptions.find((m) => m.slug === data.payment_method);
+                                            if (!selectedMethod?.requires_payment_details) return null;
+                                            return (
+                                            <div className="mt-4 space-y-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
+                                                {selectedMethod?.account_number && (
+                                                    <p className="text-sm font-semibold text-primary">Send to: {selectedMethod.account_number}</p>
+                                                )}
+                                                <p className="text-xs font-medium text-primary">Send payment and enter details below:</p>
+                                                <div>
+                                                    <Label htmlFor="payment_phone">Payment Number</Label>
+                                                    <Input
+                                                        id="payment_phone"
+                                                        type="tel"
+                                                        value={data.payment_phone}
+                                                        onChange={(e) => setData('payment_phone', e.target.value)}
+                                                        placeholder="01XXXXXXXXX"
+                                                        className="mt-1"
+                                                    />
+                                                    {errors.payment_phone && <p className="mt-1 text-xs text-destructive">{errors.payment_phone}</p>}
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="payment_amount">Payment Amount (৳)</Label>
+                                                    <Input
+                                                        id="payment_amount"
+                                                        type="number"
+                                                        min={0}
+                                                        step="any"
+                                                        value={data.payment_amount}
+                                                        onChange={(e) => setData('payment_amount', e.target.value)}
+                                                        placeholder="0"
+                                                        className="mt-1"
+                                                    />
+                                                    {errors.payment_amount && <p className="mt-1 text-xs text-destructive">{errors.payment_amount}</p>}
+                                                </div>
+                                            </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 

@@ -18,6 +18,9 @@ type Order = {
     id: number;
     order_number: string;
     status: string;
+    payment_method: string;
+    payment_phone: string | null;
+    payment_amount: string | null;
     subtotal: string;
     shipping: string;
     total: string;
@@ -28,11 +31,11 @@ type Order = {
 };
 
 function formatPrice(amount: string): string {
-    return `$${parseFloat(amount).toFixed(2)}`;
+    return `\u09f3${parseFloat(amount).toFixed(0)}`;
 }
 
 export default function OrderSuccess() {
-    const { order } = usePage<{ order: Order }>().props;
+    const { order, paymentMethods } = usePage<{ order: Order; paymentMethods: Record<string, string> }>().props;
 
     return (
         <>
@@ -76,6 +79,22 @@ export default function OrderSuccess() {
                                 <span className="text-muted-foreground">Shipping</span>
                                 <span>{parseFloat(order.shipping) === 0 ? 'Free' : formatPrice(order.shipping)}</span>
                             </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Payment</span>
+                                <span className="font-medium">{paymentMethods[order.payment_method] || order.payment_method}</span>
+                            </div>
+                            {order.payment_phone && (
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Payment Number</span>
+                                    <span>{order.payment_phone}</span>
+                                </div>
+                            )}
+                            {order.payment_amount && (
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Paid Amount</span>
+                                    <span>{formatPrice(order.payment_amount)}</span>
+                                </div>
+                            )}
                             <Separator />
                             <div className="flex justify-between font-bold">
                                 <span>Total</span>
