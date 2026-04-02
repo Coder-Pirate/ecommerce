@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\LandingPage;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -65,6 +66,17 @@ class ShopController extends Controller
     {
         return Inertia::render('shop/checkout', [
             'categories' => $this->categories(),
+        ]);
+    }
+
+    public function landing(string $slug): Response
+    {
+        $landingPage = LandingPage::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $product = Product::with('category:id,name', 'subCategory:id,name', 'images', 'variants')->findOrFail($landingPage->product_id);
+
+        return Inertia::render('shop/landing', [
+            'landingPage' => $landingPage,
+            'product' => $product,
         ]);
     }
 

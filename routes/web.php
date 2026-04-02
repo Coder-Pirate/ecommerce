@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExportUsersController;
+use App\Http\Controllers\Admin\LandingPageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SubCategoryController;
@@ -25,6 +26,8 @@ Route::post('/checkout', [OrderController::class, 'store'])->name('shop.order.st
 Route::get('/order/success/{orderNumber}', [OrderController::class, 'success'])->name('shop.order.success');
 Route::get('/about', [ShopController::class, 'about'])->name('about');
 Route::get('/contact', [ShopController::class, 'contact'])->name('contact');
+Route::get('/lp/{slug}', [ShopController::class, 'landing'])->name('shop.landing');
+Route::post('/lp/{slug}', [OrderController::class, 'storeLanding'])->name('shop.landing.order');
 
 // Redirect /dashboard to the correct role-based dashboard
 Route::middleware(['auth', 'verified'])->get('dashboard', function () {
@@ -49,6 +52,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
     Route::resource('orders', AdminOrderController::class);
+    Route::resource('landing-pages', LandingPageController::class)->except(['show']);
 });
 
 // Manager routes
