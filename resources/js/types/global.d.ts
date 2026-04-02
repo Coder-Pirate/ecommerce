@@ -32,6 +32,8 @@ export type Product = {
     price: string;
     original_price: string | null;
     in_stock: boolean;
+    free_shipping: boolean;
+    shipping_zones: { zone: string; charge: number }[] | null;
     created_at: string;
     updated_at: string;
     images?: ProductImage[];

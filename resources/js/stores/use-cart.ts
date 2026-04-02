@@ -8,6 +8,8 @@ export type CartItem = {
     price: number;
     image: string | null;
     variantLabel: string | null;
+    freeShipping: boolean;
+    shippingZones: { zone: string; charge: number }[];
 };
 
 const CART_KEY = 'cart_items';
@@ -113,10 +115,23 @@ export function getCartCount(): number {
     return getStoredCart().reduce((sum, i) => sum + i.quantity, 0);
 }
 
-export function useCart() {
+export function useCart(deliveryZone: string = '') {
     const items = useSyncExternalStore(subscribe, getSnapshot, () => []);
     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const shipping = items.reduce((sum, i) => {
+        if (i.freeShipping) {
+            return sum;
+        }
 
-    return { items, totalItems, subtotal };
+        if (!deliveryZone || !i.shippingZones?.length) {
+            return sum;
+        }
+
+        const match = i.shippingZones.find((z) => z.zone === deliveryZone);
+
+        return sum + (match ? match.charge : 0);
+    }, 0);
+
+    return { items, totalItems, subtotal, shipping };
 }

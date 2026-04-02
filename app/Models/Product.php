@@ -16,6 +16,8 @@ class Product extends Model
         'price',
         'original_price',
         'in_stock',
+        'free_shipping',
+        'shipping_zones',
     ];
 
     protected function casts(): array
@@ -24,6 +26,8 @@ class Product extends Model
             'price' => 'decimal:2',
             'original_price' => 'decimal:2',
             'in_stock' => 'boolean',
+            'free_shipping' => 'boolean',
+            'shipping_zones' => 'array',
         ];
     }
 

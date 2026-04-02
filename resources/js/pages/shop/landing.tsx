@@ -61,7 +61,7 @@ function formatPrice(price: string | number | null): string {
 
     const num = typeof price === 'string' ? parseFloat(price) : price;
 
-    return `$${num.toFixed(2)}`;
+    return `৳${num.toFixed(0)}`;
 }
 
 export default function LandingPage() {
@@ -69,11 +69,19 @@ export default function LandingPage() {
 
     const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
     const [quantity, setQuantity] = useState(1);
+    const [deliveryZone, setDeliveryZone] = useState('');
     const checkoutRef = useRef<HTMLDivElement>(null);
 
     const variants = useMemo(() => product.variants || [], [product.variants]);
     const sizes = useMemo(() => [...new Set(variants.filter((v) => v.size).map((v) => v.size!))], [variants]);
     const colors = useMemo(() => [...new Set(variants.filter((v) => v.color).map((v) => v.color!))], [variants]);
+
+    const shippingZones = useMemo(() => product.shipping_zones || [], [product.shipping_zones]);
+
+    // Auto-select first zone
+    if (!deliveryZone && shippingZones.length > 0) {
+        setDeliveryZone(shippingZones[0].zone);
+    }
 
     const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? null;
     const activePrice = selectedVariant ? selectedVariant.price : product.price;
@@ -86,7 +94,10 @@ export default function LandingPage() {
 
     const unitPrice = parseFloat(activePrice);
     const subtotal = unitPrice * quantity;
-    const shipping = subtotal > 50 ? 0 : 5.99;
+    const shipping = product.free_shipping ? 0 : (() => {
+        const matched = shippingZones.find((z) => z.zone === deliveryZone);
+        return matched ? Number(matched.charge) : 0;
+    })();
     const total = subtotal + shipping;
 
     const { data, setData, post, processing, errors, transform } = useForm({
@@ -105,6 +116,7 @@ export default function LandingPage() {
             ...formData,
             variant_id: selectedVariantId,
             quantity,
+            delivery_zone: deliveryZone,
         }));
         post(`/lp/${landingPage.slug}`);
     }
@@ -214,7 +226,15 @@ export default function LandingPage() {
                                 </Button>
                                 <div className="flex items-center gap-1.5 text-sm text-primary-foreground/80">
                                     <Truck className="h-4 w-4" />
-                                    <span>Free shipping over $50</span>
+                                    {product.free_shipping ? (
+                                        <span className="font-medium">Free Shipping</span>
+                                    ) : shippingZones.length > 0 ? (
+                                        <span>Delivery: {shippingZones.map((z, i) => (
+                                            <span key={z.zone}>{i > 0 ? ' / ' : ''}৳{Number(z.charge).toFixed(0)} ({z.zone})</span>
+                                        ))}</span>
+                                    ) : (
+                                        <span>Delivery charges apply</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -342,7 +362,7 @@ export default function LandingPage() {
                             </div>
                             <div className="flex items-center gap-2 rounded-full bg-chart-2/10 px-4 py-2 text-sm text-chart-2">
                                 <Truck className="h-4 w-4" />
-                                Cash on Delivery Available
+                                {product.free_shipping ? 'Free Shipping' : 'Cash on Delivery Available'}
                             </div>
                         </div>
                     </div>
@@ -383,7 +403,7 @@ export default function LandingPage() {
                         {/* Section banner */}
                         <div className="mb-8 rounded-xl bg-primary p-4 text-center">
                             <p className="text-lg font-bold text-primary-foreground">
-                                {landingPage.checkout_banner_text || <>Order now and get <span className="underline decoration-chart-4 decoration-2">free shipping</span> on orders over $50!</>}
+                                {landingPage.checkout_banner_text || (product.free_shipping ? <>Order now and enjoy <span className="underline decoration-chart-4 decoration-2">free shipping</span> on this product!</> : shippingZones.length > 0 ? <>Order now! Delivery: {shippingZones.map((z, i) => <span key={z.zone}>{i > 0 ? ' / ' : ''}৳{Number(z.charge).toFixed(0)} ({z.zone})</span>)}</> : <>Order now!</>)}
                             </p>
                         </div>
 
@@ -581,6 +601,26 @@ export default function LandingPage() {
                                     {/* Order Summary */}
                                     <div className="rounded-xl border border-border bg-muted/50 p-4">
                                         <h3 className="mb-3 text-sm font-bold">Your Order</h3>
+
+                                        {/* Delivery Zone Selector */}
+                                        {!product.free_shipping && shippingZones.length > 0 && (
+                                            <div className="mb-3">
+                                                <p className="mb-2 text-xs font-medium text-muted-foreground">Delivery Area</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {shippingZones.map((z) => (
+                                                        <button
+                                                            key={z.zone}
+                                                            type="button"
+                                                            onClick={() => setDeliveryZone(z.zone)}
+                                                            className={`rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${deliveryZone === z.zone ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+                                                        >
+                                                            {z.zone}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between text-muted-foreground">
                                                 <span>Subtotal</span>

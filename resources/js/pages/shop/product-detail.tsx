@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 
 function formatPrice(price: string | null): string {
     if (!price) return '';
-    return `$${parseFloat(price).toFixed(2)}`;
+    return `৳${parseFloat(price).toFixed(0)}`;
 }
 
 export default function ProductDetail() {
@@ -216,6 +216,8 @@ export default function ProductDetail() {
                                             price: parseFloat(activePrice),
                                             image: product.images?.[0]?.image_path ?? null,
                                             variantLabel,
+                                            freeShipping: product.free_shipping,
+                                            shippingZones: (product.shipping_zones || []).map((z) => ({ zone: z.zone, charge: Number(z.charge) })),
                                         },
                                         quantity,
                                     );
@@ -234,7 +236,17 @@ export default function ProductDetail() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Truck className="h-4 w-4" />
-                                <span>Free shipping on orders over $50</span>
+                                {product.free_shipping ? (
+                                    <span className="font-medium text-green-600">Free Shipping</span>
+                                ) : product.shipping_zones && product.shipping_zones.length > 0 ? (
+                                    <span>
+                                        Delivery: {product.shipping_zones.map((z, i) => (
+                                            <span key={z.zone}>{i > 0 ? ' / ' : ''}৳{Number(z.charge).toFixed(0)} ({z.zone})</span>
+                                        ))}
+                                    </span>
+                                ) : (
+                                    <span>Delivery charges apply</span>
+                                )}
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 {activeInStock ? (

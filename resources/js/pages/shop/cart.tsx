@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
 import { useCart, updateCartQuantity, removeFromCart } from '@/stores/use-cart';
 import { Button } from '@/components/ui/button';
@@ -7,13 +8,28 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 function formatPrice(amount: number): string {
-    return `$${amount.toFixed(2)}`;
+    return `৳${amount.toFixed(0)}`;
 }
 
 export default function CartPage() {
-    const { items, totalItems, subtotal } = useCart();
-    const shipping = subtotal > 50 ? 0 : 5.99;
+    const [deliveryZone, setDeliveryZone] = useState('');
+    const { items, totalItems, subtotal, shipping } = useCart(deliveryZone);
     const total = subtotal + shipping;
+
+    const allZones = useMemo(() => {
+        const zoneSet = new Set<string>();
+        items.forEach((item) => {
+            if (!item.freeShipping && item.shippingZones) {
+                item.shippingZones.forEach((z) => zoneSet.add(z.zone));
+            }
+        });
+        return [...zoneSet];
+    }, [items]);
+
+    // Auto-select first zone if none selected
+    if (!deliveryZone && allZones.length > 0) {
+        setDeliveryZone(allZones[0]);
+    }
 
     return (
         <>
@@ -97,6 +113,26 @@ export default function CartPage() {
                         {/* Order summary */}
                         <Card className="h-fit p-4">
                             <h2 className="mb-4 text-base font-semibold">Order Summary</h2>
+
+                            {/* Delivery Zone */}
+                            {allZones.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="mb-2 text-sm font-medium">Delivery Area</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {allZones.map((zone) => (
+                                            <button
+                                                key={zone}
+                                                type="button"
+                                                onClick={() => setDeliveryZone(zone)}
+                                                className={`rounded-md border px-3 py-2 text-xs font-medium transition-colors ${deliveryZone === zone ? 'border-primary bg-primary text-primary-foreground' : 'border-input hover:border-primary/50'}`}
+                                            >
+                                                {zone}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Subtotal ({totalItems} items)</span>
@@ -106,9 +142,6 @@ export default function CartPage() {
                                     <span className="text-muted-foreground">Shipping</span>
                                     <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
                                 </div>
-                                {shipping === 0 && (
-                                    <p className="text-xs text-green-600">You qualify for free shipping!</p>
-                                )}
                                 <Separator />
                                 <div className="flex justify-between text-base font-bold">
                                     <span>Total</span>

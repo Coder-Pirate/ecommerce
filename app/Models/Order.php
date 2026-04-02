@@ -22,6 +22,7 @@ class Order extends Model
         'address',
         'city',
         'zip',
+        'delivery_zone',
     ];
 
     protected $casts = [

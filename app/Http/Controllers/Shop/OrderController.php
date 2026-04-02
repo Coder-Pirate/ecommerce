@@ -22,14 +22,18 @@ class OrderController extends Controller
             'address' => 'required|string|max:500',
             'city' => 'required|string|max:255',
             'zip' => 'required|string|max:20',
+            'delivery_zone' => 'required|string|max:100',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.variant_id' => 'nullable|integer|exists:product_variants,id',
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
+        $deliveryZone = $validated['delivery_zone'];
+
         // Build order items and calculate totals
         $subtotal = 0;
+        $shipping = 0;
         $orderItems = [];
 
         foreach ($validated['items'] as $item) {
@@ -40,6 +44,13 @@ class OrderController extends Controller
             $quantity = $item['quantity'];
             $lineTotal = $price * $quantity;
             $subtotal += $lineTotal;
+
+            if (!$product->free_shipping) {
+                $zones = $product->shipping_zones ?? [];
+                $matched = collect($zones)->firstWhere('zone', $deliveryZone);
+                $charge = $matched ? (float) $matched['charge'] : 0;
+                $shipping += $charge;
+            }
 
             $variantLabel = null;
             if ($variant) {
@@ -60,7 +71,6 @@ class OrderController extends Controller
             ];
         }
 
-        $shipping = $subtotal > 50 ? 0 : 5.99;
         $total = $subtotal + $shipping;
 
         $order = Order::create([
@@ -77,6 +87,7 @@ class OrderController extends Controller
             'address' => $validated['address'],
             'city' => $validated['city'],
             'zip' => $validated['zip'],
+            'delivery_zone' => $deliveryZone,
         ]);
 
         foreach ($orderItems as $item) {
@@ -100,16 +111,26 @@ class OrderController extends Controller
             'address' => 'required|string|max:500',
             'city' => 'required|string|max:255',
             'zip' => 'required|string|max:20',
+            'delivery_zone' => 'required|string|max:100',
             'variant_id' => 'nullable|integer|exists:product_variants,id',
             'quantity' => 'required|integer|min:1',
         ]);
 
         $variant = $validated['variant_id'] ? ProductVariant::findOrFail($validated['variant_id']) : null;
+        $deliveryZone = $validated['delivery_zone'];
 
         $price = $variant ? (float) $variant->price : (float) $product->price;
         $quantity = $validated['quantity'];
         $subtotal = $price * $quantity;
-        $shipping = $subtotal > 50 ? 0 : 5.99;
+
+        if ($product->free_shipping) {
+            $shipping = 0;
+        } else {
+            $zones = $product->shipping_zones ?? [];
+            $matched = collect($zones)->firstWhere('zone', $deliveryZone);
+            $shipping = $matched ? (float) $matched['charge'] : 0;
+        }
+
         $total = $subtotal + $shipping;
 
         $variantLabel = null;
@@ -134,6 +155,7 @@ class OrderController extends Controller
             'address' => $validated['address'],
             'city' => $validated['city'],
             'zip' => $validated['zip'],
+            'delivery_zone' => $deliveryZone,
         ]);
 
         $order->items()->create([

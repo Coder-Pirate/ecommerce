@@ -1,5 +1,6 @@
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { Lock, ShoppingBag } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
 import { useCart, clearCart } from '@/stores/use-cart';
 import { Button } from '@/components/ui/button';
@@ -9,13 +10,27 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
 function formatPrice(amount: number): string {
-    return `$${amount.toFixed(2)}`;
+    return `৳${amount.toFixed(0)}`;
 }
 
 export default function CheckoutPage() {
-    const { items, totalItems, subtotal } = useCart();
-    const shipping = subtotal > 50 ? 0 : 5.99;
+    const [deliveryZone, setDeliveryZone] = useState('');
+    const { items, totalItems, subtotal, shipping } = useCart(deliveryZone);
     const total = subtotal + shipping;
+
+    const allZones = useMemo(() => {
+        const zoneSet = new Set<string>();
+        items.forEach((item) => {
+            if (!item.freeShipping && item.shippingZones) {
+                item.shippingZones.forEach((z) => zoneSet.add(z.zone));
+            }
+        });
+        return [...zoneSet];
+    }, [items]);
+
+    if (!deliveryZone && allZones.length > 0) {
+        setDeliveryZone(allZones[0]);
+    }
 
     const { data, setData, post, processing, errors } = useForm({
         first_name: '',
@@ -25,6 +40,7 @@ export default function CheckoutPage() {
         address: '',
         city: '',
         zip: '',
+        delivery_zone: '',
         items: [] as { product_id: number; variant_id: number | null; quantity: number }[],
     });
 
@@ -35,6 +51,7 @@ export default function CheckoutPage() {
             variant_id: i.variantId,
             quantity: i.quantity,
         }));
+        data.delivery_zone = deliveryZone;
         post('/checkout', {
             onSuccess: () => clearCart(),
         });
@@ -77,6 +94,25 @@ export default function CheckoutPage() {
                     <div className="grid gap-6 lg:grid-cols-3">
                         {/* Form */}
                         <div className="space-y-6 lg:col-span-2">
+                            {/* Delivery Zone */}
+                            {allZones.length > 0 && (
+                                <Card className="p-4">
+                                    <h2 className="mb-3 text-base font-semibold">Delivery Area</h2>
+                                    <div className="flex flex-wrap gap-3">
+                                        {allZones.map((zone) => (
+                                            <button
+                                                key={zone}
+                                                type="button"
+                                                onClick={() => setDeliveryZone(zone)}
+                                                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors ${deliveryZone === zone ? 'border-primary bg-primary/10 text-primary' : 'border-input hover:border-primary/50'}`}
+                                            >
+                                                {zone}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </Card>
+                            )}
+
                             {/* Shipping info */}
                             <Card className="p-4">
                                 <h2 className="mb-4 text-base font-semibold">Shipping Information</h2>

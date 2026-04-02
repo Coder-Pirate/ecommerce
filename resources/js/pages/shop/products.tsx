@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 
 function formatPrice(price: string | null): string {
     if (!price) return '';
-    return `$${parseFloat(price).toFixed(2)}`;
+    return `৳${parseFloat(price).toFixed(0)}`;
 }
 
 export default function ShopProducts() {
@@ -117,6 +117,9 @@ export default function ShopProducts() {
                                             <span className="text-[10px] text-muted-foreground line-through">{formatPrice(product.original_price)}</span>
                                         )}
                                     </div>
+                                    {product.free_shipping && (
+                                        <p className="mt-0.5 text-[10px] font-medium text-green-600">Free Shipping</p>
+                                    )}
                                 </CardContent>
                             </Card>
                         </Link>

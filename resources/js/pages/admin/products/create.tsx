@@ -21,6 +21,8 @@ export default function CreateProduct({ categories, subCategories }: Props) {
         original_price: '',
         images: [] as File[],
         in_stock: true,
+        free_shipping: false,
+        shipping_zones: [] as { zone: string; charge: string }[],
         variants: [] as VariantRow[],
     });
 
@@ -241,6 +243,85 @@ export default function CreateProduct({ categories, subCategories }: Props) {
                                 In Stock
                             </label>
                         </div>
+
+                        <div className="flex items-center gap-2 sm:col-span-2">
+                            <input
+                                id="free_shipping"
+                                type="checkbox"
+                                checked={data.free_shipping}
+                                onChange={(e) => setData('free_shipping', e.target.checked)}
+                                className="h-4 w-4 rounded border-input"
+                            />
+                            <label htmlFor="free_shipping" className="text-sm font-medium">
+                                Free Shipping
+                            </label>
+                        </div>
+
+                        {!data.free_shipping && (
+                            <div className="space-y-3 sm:col-span-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">Shipping Zones</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('shipping_zones', [...data.shipping_zones, { zone: '', charge: '' }])}
+                                        className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+                                    >
+                                        <Plus className="h-3 w-3" /> Add Zone
+                                    </button>
+                                </div>
+                                {data.shipping_zones.length === 0 && (
+                                    <p className="text-xs text-muted-foreground">No shipping zones added. Click "Add Zone" to add delivery areas.</p>
+                                )}
+                                {data.shipping_zones.map((sz, i) => (
+                                    <div key={i} className="flex items-end gap-2 rounded-lg border border-input p-3">
+                                        <div className="flex-1 space-y-1">
+                                            <label className="text-[11px] text-muted-foreground">Zone Name</label>
+                                            <input
+                                                type="text"
+                                                value={sz.zone}
+                                                onChange={(e) => {
+                                                    const updated = [...data.shipping_zones];
+                                                    updated[i] = { ...updated[i], zone: e.target.value };
+                                                    setData('shipping_zones', updated);
+                                                }}
+                                                placeholder="e.g. Inside Dhaka"
+                                                className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                                            />
+                                            {errors[`shipping_zones.${i}.zone` as keyof typeof errors] && (
+                                                <p className="text-[10px] text-destructive">{errors[`shipping_zones.${i}.zone` as keyof typeof errors]}</p>
+                                            )}
+                                        </div>
+                                        <div className="w-32 space-y-1">
+                                            <label className="text-[11px] text-muted-foreground">Charge (৳)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={sz.charge}
+                                                onChange={(e) => {
+                                                    const updated = [...data.shipping_zones];
+                                                    updated[i] = { ...updated[i], charge: e.target.value };
+                                                    setData('shipping_zones', updated);
+                                                }}
+                                                placeholder="e.g. 50"
+                                                className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                                            />
+                                            {errors[`shipping_zones.${i}.charge` as keyof typeof errors] && (
+                                                <p className="text-[10px] text-destructive">{errors[`shipping_zones.${i}.charge` as keyof typeof errors]}</p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('shipping_zones', data.shipping_zones.filter((_, idx) => idx !== i))}
+                                            className="mb-0.5 rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                                {errors.shipping_zones && <p className="text-sm text-destructive">{errors.shipping_zones}</p>}
+                            </div>
+                        )}
                     </div>
 
                     {/* Variants */}

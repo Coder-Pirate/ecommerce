@@ -75,7 +75,7 @@ export function FeaturedProducts() {
 
     function formatPrice(price: string | null): string {
         if (!price) return '';
-        return `$${parseFloat(price).toFixed(2)}`;
+        return `৳${parseFloat(price).toFixed(0)}`;
     }
 
     return (
@@ -93,11 +93,14 @@ export function FeaturedProducts() {
                 {featuredProducts.map((product) => (
                     <Link key={product.id} href={`/product/${product.id}`}>
                         <Card className="group cursor-pointer overflow-hidden transition-all hover:shadow-md">
-                            <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/30 text-2xl sm:text-3xl transition-transform group-hover:scale-105">
+                            <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/30 text-2xl sm:text-3xl transition-transform group-hover:scale-105">
                                 {product.images?.[0] ? (
                                     <img src={`/${product.images[0].image_path}`} alt={product.name} className="h-full w-full object-cover" />
                                 ) : (
                                     <span>📦</span>
+                                )}
+                                {product.free_shipping && (
+                                    <span className="absolute left-1 top-1 rounded bg-green-600 px-1.5 py-0.5 text-[9px] font-semibold text-white">Free Shipping</span>
                                 )}
                             </div>
                             <CardContent className="p-2">
