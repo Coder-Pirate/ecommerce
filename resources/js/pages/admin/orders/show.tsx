@@ -10,6 +10,10 @@ type OrderItem = {
     price: string;
     quantity: number;
     total: string;
+    product: {
+        id: number;
+        images?: { id: number; image_path: string; sort_order: number }[];
+    } | null;
 };
 
 type Order = {
@@ -129,10 +133,21 @@ export default function OrderShow() {
                                     {order.items.map((item) => (
                                         <tr key={item.id}>
                                             <td className="px-4 py-3">
-                                                <div className="font-medium">{item.product_name}</div>
-                                                {item.variant_label && (
-                                                    <div className="text-xs text-muted-foreground">{item.variant_label}</div>
-                                                )}
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
+                                                        {item.product?.images?.[0] ? (
+                                                            <img src={`/${item.product.images[0].image_path}`} alt={item.product_name} className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-lg">📦</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium">{item.product_name}</div>
+                                                        {item.variant_label && (
+                                                            <div className="text-xs text-muted-foreground">{item.variant_label}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3">{formatPrice(item.price)}</td>
                                             <td className="px-4 py-3">{item.quantity}</td>

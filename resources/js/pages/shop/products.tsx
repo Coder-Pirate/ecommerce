@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Filter } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ShopLayout } from '@/components/ecommerce/shop-layout';
 import type { SharedCategory, Product } from '@/types/global';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,14 @@ function formatPrice(price: string | null): string {
 
 export default function ShopProducts() {
     const { categories, products } = usePage<{ categories: SharedCategory[]; products: Product[] }>().props;
-    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+
+    const initialCategory = useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+        const catParam = params.get('category');
+        return catParam ? Number(catParam) : null;
+    }, []);
+
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(initialCategory);
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState<'default' | 'price-low' | 'price-high'>('default');
 

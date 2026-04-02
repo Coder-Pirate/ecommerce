@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronRight, Tag, X } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useState } from 'react';
@@ -24,10 +24,18 @@ function CategoryItem({ category, desktopCollapsed, onExpand }: { category: DbCa
         : Tag;
     const hasSubs = category.sub_categories && category.sub_categories.length > 0;
 
+    const handleCategoryClick = () => {
+        if (hasSubs) {
+            setExpanded(!expanded);
+        } else {
+            router.visit(`/products?category=${category.id}`);
+        }
+    };
+
     const fullItem = (
         <li className={desktopCollapsed ? 'lg:hidden' : ''}>
             <button
-                onClick={() => hasSubs ? setExpanded(!expanded) : undefined}
+                onClick={handleCategoryClick}
                 className={cn(
                     'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground',
                     expanded && 'bg-accent/50 text-accent-foreground',
@@ -43,6 +51,14 @@ function CategoryItem({ category, desktopCollapsed, onExpand }: { category: DbCa
             </button>
             {expanded && hasSubs && (
                 <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
+                    <li>
+                        <Link
+                            href={`/products?category=${category.id}`}
+                            className="block rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                            All {category.name}
+                        </Link>
+                    </li>
                     {category.sub_categories.map((sub) => (
                         <li key={sub.id}>
                             <Link
